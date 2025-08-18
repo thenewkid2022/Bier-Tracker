@@ -20,11 +20,6 @@ workflows:
       ruby: default
       # Node.js für Flutter-Builds
       node: latest
-      # Git-Konfiguration
-      git:
-        config:
-          user.name: "Codemagic CI"
-          user.email: "ci@codemagic.io"
     
     # Build-Schritte
     scripts:
@@ -81,11 +76,6 @@ workflows:
       # Nur bei Push-Events
       events:
         - push
-      # Ignoriere bestimmte Dateien
-      ignore:
-        - '**/*.md'
-        - '**/*.txt'
-        - '**/docs/**'
     
     # Build-Cache aktivieren
     cache:
@@ -96,17 +86,6 @@ workflows:
         - ~/.cocoapods
         - ~/.npm
         - ~/.cache/flutter
-    
-    # Build-Umgebungsvariablen
-    environment_variables:
-      # Flutter-spezifische Variablen
-      FLUTTER_ROOT: "/usr/local/flutter"
-      FLUTTER_VERSION: "stable"
-      # iOS-spezifische Variablen
-      DEVELOPER_DIR: "/Applications/Xcode.app/Contents/Developer"
-      # Build-Konfiguration
-      BUILD_NUMBER: $BUILD_NUMBER
-      BUILD_VERSION: "1.0.0"
     
     # Build-Timeout
     max_build_duration: 60
@@ -125,10 +104,6 @@ workflows:
       cocoapods: default
       ruby: default
       node: latest
-      git:
-        config:
-          user.name: "Codemagic CI"
-          user.email: "ci@codemagic.io"
     
     scripts:
       # Flutter-Abhängigkeiten
@@ -197,12 +172,6 @@ workflows:
         - ~/.cocoapods
         - ~/.cache/flutter
     
-    environment_variables:
-      FLUTTER_ROOT: "/usr/local/flutter"
-      DEVELOPER_DIR: "/Applications/Xcode.app/Contents/Developer"
-      BUILD_NUMBER: $BUILD_NUMBER
-      BUILD_VERSION: "1.0.0"
-    
     max_build_duration: 60
     instance_type: mac_mini_m1
 
@@ -212,8 +181,6 @@ global:
   environment:
     flutter: stable
     xcode: latest
-    ios_signing:
-      - "com.thenewkid2022.bierlounge-tracker"
   
   # Standard-Cache-Einstellungen
   cache:
@@ -272,7 +239,7 @@ publishing:
 #    - GITHUB_TOKEN (falls GitHub Releases aktiviert)
 #
 # 3. EXPORT OPTIONS:
-#    - Erstelle eine exportOptions.plist in ios/ für IPA-Export
+#    - Die exportOptions.plist ist bereits in ios/ für IPA-Export erstellt
 #    - Konfiguriere die Distribution-Methode (App Store, Ad Hoc, Enterprise)
 #
 # 4. BUILD-TRIGGER:
