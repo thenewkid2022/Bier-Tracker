@@ -1,0 +1,289 @@
+# Codemagic CI/CD Konfiguration für BierLounge Tracker
+# Diese Datei definiert den automatischen Build- und Deployment-Workflow
+
+# Workflow-Konfiguration
+workflows:
+  # iOS Build & Test Workflow
+  ios-workflow:
+    name: iOS Build & Test
+    environment:
+      # Flutter-Version
+      flutter: stable
+      # Xcode-Version (aktuelle stabile Version)
+      xcode: latest
+      # iOS-SDK
+      ios_signing:
+        - "com.thenewkid2022.bierlounge-tracker"
+      # CocoaPods
+      cocoapods: default
+      # Ruby-Version für CocoaPods
+      ruby: default
+      # Node.js für Flutter-Builds
+      node: latest
+      # Git-Konfiguration
+      git:
+        config:
+          user.name: "Codemagic CI"
+          user.email: "ci@codemagic.io"
+    
+    # Build-Schritte
+    scripts:
+      # Flutter-Abhängigkeiten installieren
+      - name: Flutter Dependencies
+        script: |
+          flutter pub get
+          flutter clean
+          flutter pub get
+      
+      # iOS-Abhängigkeiten installieren
+      - name: iOS Dependencies
+        script: |
+          cd ios
+          pod install
+          cd ..
+      
+      # Flutter-Build vorbereiten
+      - name: Flutter Build
+        script: |
+          flutter build ios --release --no-codesign
+      
+      # Code-Signing und Archive erstellen
+      - name: iOS Archive
+        script: |
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -destination generic/platform=iOS \
+            -archivePath build/Runner.xcarchive \
+            clean archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+          cd ..
+    
+    # Artefakte sammeln
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    
+    # Build-Trigger
+    triggering:
+      # Nur bei Änderungen im master/main Branch
+      branch_patterns:
+        - pattern: 'master'
+          include: true
+          source: true
+        - pattern: 'main'
+          include: true
+          source: true
+      # Nur bei Push-Events
+      events:
+        - push
+      # Ignoriere bestimmte Dateien
+      ignore:
+        - '**/*.md'
+        - '**/*.txt'
+        - '**/docs/**'
+    
+    # Build-Cache aktivieren
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/.gradle/caches
+        - ~/.m2/repository
+        - ~/.cocoapods
+        - ~/.npm
+        - ~/.cache/flutter
+    
+    # Build-Umgebungsvariablen
+    environment_variables:
+      # Flutter-spezifische Variablen
+      FLUTTER_ROOT: "/usr/local/flutter"
+      FLUTTER_VERSION: "stable"
+      # iOS-spezifische Variablen
+      DEVELOPER_DIR: "/Applications/Xcode.app/Contents/Developer"
+      # Build-Konfiguration
+      BUILD_NUMBER: $BUILD_NUMBER
+      BUILD_VERSION: "1.0.0"
+    
+    # Build-Timeout
+    max_build_duration: 60
+    
+    # Build-Parallelität
+    instance_type: mac_mini_m1
+
+  # iOS Release Build Workflow
+  ios-release-workflow:
+    name: iOS Release Build
+    environment:
+      flutter: stable
+      xcode: latest
+      ios_signing:
+        - "com.thenewkid2022.bierlounge-tracker"
+      cocoapods: default
+      ruby: default
+      node: latest
+      git:
+        config:
+          user.name: "Codemagic CI"
+          user.email: "ci@codemagic.io"
+    
+    scripts:
+      # Flutter-Abhängigkeiten
+      - name: Flutter Setup
+        script: |
+          flutter pub get
+          flutter clean
+          flutter pub get
+      
+      # iOS-Abhängigkeiten
+      - name: iOS Setup
+        script: |
+          cd ios
+          pod install
+          cd ..
+      
+      # Release Build
+      - name: Release Build
+        script: |
+          flutter build ios --release --no-codesign
+      
+      # Archive erstellen
+      - name: Create Archive
+        script: |
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -destination generic/platform=iOS \
+            -archivePath build/Runner.xcarchive \
+            clean archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+          cd ..
+      
+      # IPA erstellen
+      - name: Create IPA
+        script: |
+          cd ios
+          xcodebuild -exportArchive \
+            -archivePath build/Runner.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist exportOptions.plist
+          cd ..
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    
+    triggering:
+      branch_patterns:
+        - pattern: 'release/*'
+          include: true
+          source: true
+        - pattern: 'v*'
+          include: true
+          source: true
+      events:
+        - push
+        - tag
+    
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/.cocoapods
+        - ~/.cache/flutter
+    
+    environment_variables:
+      FLUTTER_ROOT: "/usr/local/flutter"
+      DEVELOPER_DIR: "/Applications/Xcode.app/Contents/Developer"
+      BUILD_NUMBER: $BUILD_NUMBER
+      BUILD_VERSION: "1.0.0"
+    
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+
+# Globale Einstellungen
+global:
+  # Standard-Umgebung für alle Workflows
+  environment:
+    flutter: stable
+    xcode: latest
+    ios_signing:
+      - "com.thenewkid2022.bierlounge-tracker"
+  
+  # Standard-Cache-Einstellungen
+  cache:
+    cache_paths:
+      - ~/.pub-cache
+      - ~/.cocoapods
+      - ~/.cache/flutter
+  
+  # Standard-Timeout
+  max_build_duration: 60
+  
+  # Standard-Instanz-Typ
+  instance_type: mac_mini_m1
+
+# Notifications (optional)
+notifications:
+  email:
+    recipients:
+      - "thenewkid2022@github.com"  # Ersetze durch deine E-Mail
+  slack:
+    webhook_url: "YOUR_SLACK_WEBHOOK_URL"  # Optional: Slack-Integration
+  teams:
+    webhook_url: "YOUR_TEAMS_WEBHOOK_URL"  # Optional: Teams-Integration
+
+# Build-Status-Integration
+publishing:
+  # App Store Connect (für spätere Veröffentlichung)
+  app_store_connect:
+    api_key: $APP_STORE_CONNECT_API_KEY
+    key_id: $APP_STORE_CONNECT_KEY_ID
+    issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+    submit_to_testflight: false  # Setze auf true für TestFlight-Upload
+  
+  # GitHub Releases (optional)
+  github_releases:
+    token: $GITHUB_TOKEN
+    tag: "v$BUILD_VERSION"
+    name: "BierLounge Tracker v$BUILD_VERSION"
+    body: "Automated build from Codemagic CI/CD"
+    draft: false
+    prerelease: false
+
+# Kommentare und Hinweise
+# 
+# WICHTIGE HINWEISE:
+# 
+# 1. CODE-SIGNING:
+#    - Du musst deine Code-Signing-Zertifikate in Codemagic hochladen
+#    - Gehe zu Codemagic > Teams > Code Signing
+#    - Lade deine .p12-Datei und Provisioning Profile hoch
+#    - Setze die Umgebungsvariablen entsprechend
+#
+# 2. UMWELTVARIABLEN:
+#    - Setze diese in Codemagic > Teams > Environment Variables
+#    - APP_STORE_CONNECT_API_KEY, APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID
+#    - GITHUB_TOKEN (falls GitHub Releases aktiviert)
+#
+# 3. EXPORT OPTIONS:
+#    - Erstelle eine exportOptions.plist in ios/ für IPA-Export
+#    - Konfiguriere die Distribution-Methode (App Store, Ad Hoc, Enterprise)
+#
+# 4. BUILD-TRIGGER:
+#    - Master/Main Branch: Automatische Builds bei jedem Push
+#    - Release Branches: Automatische Release-Builds
+#    - Tags: Automatische Version-Builds
+#
+# 5. CACHE:
+#    - Aktiviert für schnellere Builds
+#    - Flutter, CocoaPods und andere Dependencies werden gecacht
+#
+# 6. INSTANCE TYPE:
+#    - Mac Mini M1 für optimale iOS-Build-Performance
+#    - Kann je nach Bedarf angepasst werden

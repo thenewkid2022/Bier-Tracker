@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Distribution-Methode: App Store, Ad Hoc, Enterprise, Development -->
+	<key>method</key>
+	<string>app-store</string>
+	
+	<!-- Team ID (wird von Codemagic gesetzt) -->
+	<key>teamID</key>
+	<string>$(DEVELOPMENT_TEAM)</string>
+	
+	<!-- Bundle Identifier -->
+	<key>signingStyle</key>
+	<string>automatic</string>
+	
+	<!-- Code-Signing-Identität -->
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+	
+	<!-- Provisioning Profile -->
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.thenewkid2022.bierlounge-tracker</key>
+		<string>$(PROVISIONING_PROFILE_NAME)</string>
+	</dict>
+	
+	<!-- App Store Connect API Key -->
+	<key>apiKey</key>
+	<dict>
+		<key>keyID</key>
+		<string>$(APP_STORE_CONNECT_KEY_ID)</string>
+		<key>issuerID</key>
+		<string>$(APP_STORE_CONNECT_ISSUER_ID)</string>
+		<key>apiKey</key>
+		<string>$(APP_STORE_CONNECT_API_KEY)</string>
+	</dict>
+	
+	<!-- Upload zu App Store Connect -->
+	<key>uploadBitcode</key>
+	<false/>
+	<key>uploadSymbols</key>
+	<true/>
+	
+	<!-- Kompilierungs-Optimierungen -->
+	<key>compileBitcode</key>
+	<false/>
+	<key>stripSwiftSymbols</key>
+	<true/>
+	
+	<!-- Thinning (verschiedene Geräte-Architekturen) -->
+	<key>thinning</key>
+	<string>&lt;none&gt;</string>
+	
+	<!-- Distribution-Name -->
+	<key>distributionBundleIdentifier</key>
+	<string>com.thenewkid2022.bierlounge-tracker</string>
+	
+	<!-- App Store Connect Upload -->
+	<key>iCloudContainerEnvironment</key>
+	<string>Production</string>
+	
+	<!-- Export-Pfad -->
+	<key>exportPath</key>
+	<string>build/ios/ipa</string>
+	
+	<!-- Bundle-Version -->
+	<key>bundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	
+	<!-- Bundle-Short-Version -->
+	<key>bundleShortVersion</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	
+	<!-- Bundle-Display-Name -->
+	<key>bundleDisplayName</key>
+	<string>BierLounge Tracker</string>
+	
+	<!-- Bundle-Identifier -->
+	<key>bundleIdentifier</key>
+	<string>com.thenewkid2022.bierlounge-tracker</string>
+	
+	<!-- Bundle-Package-Type -->
+	<key>bundlePackageType</key>
+	<string>APPL</string>
+	
+	<!-- Bundle-Executable -->
+	<key>bundleExecutable</key>
+	<string>Runner</string>
+	
+	<!-- Bundle-Info-Dictionary-Version -->
+	<key>bundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	
+	<!-- Bundle-Development-Region -->
+	<key>bundleDevelopmentRegion</key>
+	<string>en</string>
+	
+	<!-- Bundle-Requires-IPhoneOS -->
+	<key>bundleRequiresIPhoneOS</key>
+	<true/>
+	
+	<!-- Bundle-Supported-Platforms -->
+	<key>bundleSupportedPlatforms</key>
+	<array>
+		<string>iPhoneOS</string>
+	</array>
+	
+	<!-- Bundle-Supported-Interface-Orientations -->
+	<key>bundleSupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	
+	<!-- Bundle-Supported-Interface-Orientations-iPad -->
+	<key>bundleSupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	
+	<!-- Bundle-Supported-Device-Families -->
+	<key>bundleSupportedDeviceFamilies</key>
+	<array>
+		<string>1</string>
+		<string>2</string>
+	</array>
+	
+	<!-- Bundle-Minimum-OS-Version -->
+	<key>bundleMinimumOSVersion</key>
+	<string>12.0</string>
+	
+	<!-- Bundle-URL-Types -->
+	<key>bundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.thenewkid2022.bierlounge-tracker</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>bierlounge</string>
+			</array>
+		</dict>
+	</array>
+	
+	<!-- Bundle-Application-Queries-Schemes (Twint) -->
+	<key>bundleApplicationQueriesSchemes</key>
+	<array>
+		<string>twint</string>
+		<string>twint-extended</string>
+		<string>twint-issuer1</string>
+		<string>twint-issuer2</string>
+		<string>twint-issuer3</string>
+		<string>twint-issuer4</string>
+		<string>twint-issuer5</string>
+		<string>twint-issuer6</string>
+		<string>twint-issuer7</string>
+		<string>twint-issuer8</string>
+		<string>twint-issuer9</string>
+		<string>twint-issuer10</string>
+	</array>
+	
+	<!-- Bundle-Info-Dictionary -->
+	<key>bundleInfoDictionary</key>
+	<dict>
+		<key>CFBundleDisplayName</key>
+		<string>BierLounge Tracker</string>
+		<key>CFBundleName</key>
+		<string>BierLounge Tracker</string>
+		<key>CFBundleShortVersionString</key>
+		<string>$(FLUTTER_BUILD_NAME)</string>
+		<key>CFBundleVersion</key>
+		<string>$(FLUTTER_BUILD_NUMBER)</string>
+		<key>CFBundlePackageType</key>
+		<string>APPL</string>
+		<key>CFBundleSignature</key>
+		<string>????</string>
+		<key>CFBundleExecutable</key>
+		<string>Runner</string>
+		<key>CFBundleIdentifier</key>
+		<string>com.thenewkid2022.bierlounge-tracker</string>
+		<key>CFBundleInfoDictionaryVersion</key>
+		<string>6.0</string>
+		<key>CFBundleDevelopmentRegion</key>
+		<string>en</string>
+		<key>LSRequiresIPhoneOS</key>
+		<true/>
+		<key>UILaunchStoryboardName</key>
+		<string>LaunchScreen</string>
+		<key>UIMainStoryboardFile</key>
+		<string>Main</string>
+		<key>UISupportedInterfaceOrientations</key>
+		<array>
+			<string>UIInterfaceOrientationPortrait</string>
+			<string>UIInterfaceOrientationLandscapeLeft</string>
+			<string>UIInterfaceOrientationLandscapeRight</string>
+		</array>
+		<key>UISupportedInterfaceOrientations~ipad</key>
+		<array>
+			<string>UIInterfaceOrientationPortrait</string>
+			<string>UIInterfaceOrientationPortraitUpsideDown</string>
+			<string>UIInterfaceOrientationLandscapeLeft</string>
+			<string>UIInterfaceOrientationLandscapeRight</string>
+		</array>
+		<key>UISupportedDeviceFamilies</key>
+		<array>
+			<string>1</string>
+			<string>2</string>
+		</array>
+		<key>MinimumOSVersion</key>
+		<string>12.0</string>
+	</dict>
+</dict>
+</plist>
