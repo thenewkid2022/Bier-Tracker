@@ -13,7 +13,7 @@ workflows:
       xcode: latest
       # iOS-SDK
       ios_signing:
-        - "com.thenewkid2022.bierlounge-tracker"
+        com.thenewkid2022.bierlounge-tracker: "com.thenewkid2022.bierlounge-tracker"
       # CocoaPods
       cocoapods: default
       # Ruby-Version für CocoaPods
@@ -100,7 +100,7 @@ workflows:
       flutter: stable
       xcode: latest
       ios_signing:
-        - "com.thenewkid2022.bierlounge-tracker"
+        com.thenewkid2022.bierlounge-tracker: "com.thenewkid2022.bierlounge-tracker"
       cocoapods: default
       ruby: default
       node: latest
