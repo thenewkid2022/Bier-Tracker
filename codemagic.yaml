@@ -11,9 +11,10 @@ workflows:
       flutter: stable
       # Xcode-Version (aktuelle stabile Version)
       xcode: latest
-      # iOS-SDK
+      # iOS-SDK - Korrigiert für Codemagic-Validierung
       ios_signing:
-        com.thenewkid2022.bierlounge-tracker: "com.thenewkid2022.bierlounge-tracker"
+        distribution_type: app_store  # App Store Distribution (kann zu 'ad-hoc' oder 'enterprise' geändert werden)
+        bundle_identifier: com.thenewkid2022.bierlounge-tracker
       # CocoaPods
       cocoapods: default
       # Ruby-Version für CocoaPods
@@ -99,8 +100,10 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
+      # iOS-SDK - Korrigiert für Codemagic-Validierung
       ios_signing:
-        com.thenewkid2022.bierlounge-tracker: "com.thenewkid2022.bierlounge-tracker"
+        distribution_type: app_store  # App Store Distribution (kann zu 'ad-hoc' oder 'enterprise' geändert werden)
+        bundle_identifier: com.thenewkid2022.bierlounge-tracker
       cocoapods: default
       ruby: default
       node: latest
