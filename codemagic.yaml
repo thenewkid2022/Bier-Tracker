@@ -13,25 +13,18 @@ workflows:
         - appstore_credentials  # Erbt die App Store Connect Vars aus dem UI
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: de.bierlounge.tracker
+        bundle_identifier: com.thenewkid2022.bierlounge-tracker
     scripts:
       - name: Install Flutter dependencies
         script: flutter pub get
-      - name: Debug Environment Vars
-        script: |
-          echo "Issuer ID: $APP_STORE_CONNECT_ISSUER_ID"
-          echo "Key Identifier: $APP_STORE_CONNECT_KEY_IDENTIFIER"
-          echo "Private Key starts with: ${APP_STORE_CONNECT_PRIVATE_KEY:0:30}"  # Nur Anfang, um zu checken ob PEM
       - name: Install Pods
         script: |
           cd ios
           pod install
-      - name: Set up code signing settings on Xcode project
+      - name: Set up code signing
         script: xcode-project use-profiles
-      - name: Build IPA for TestFlight
-        script: |
-          flutter build ipa --release \
-            --export-options-plist=/Users/builder/export_options.plist
+      - name: Build IPA
+        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
