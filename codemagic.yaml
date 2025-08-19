@@ -27,7 +27,7 @@ workflows:
           cd ios
           rm -rf Flutter/AppframeworkInfo.plist Flutter/Flutter.podspec
       - name: Update Flutter iOS Config
-        script: flutter build ios --config-only --release --verbose
+        script: flutter build ios --config-only --release --no-codesign --verbose
       - name: Increment Build Number
         script: |
           cd ios
