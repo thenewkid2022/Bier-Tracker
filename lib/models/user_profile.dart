@@ -1,19 +1,11 @@
-import 'package:hive/hive.dart';
 
-part 'user_profile.g.dart';
 
-@HiveType(typeId: 1)
-class UserProfile extends HiveObject {
-  @HiveField(0)
+class UserProfile {
   String id;
-  @HiveField(1)
   String name;
-  @HiveField(2)
   String? email;
-  @HiveField(3)
   double balance;
-  @HiveField(4)
-  int monthlyCount; // Für Achievements/Leaderboard
+  int monthlyCount;
 
   UserProfile({
     required this.id,
@@ -22,6 +14,26 @@ class UserProfile extends HiveObject {
     this.balance = 0.0,
     this.monthlyCount = 0,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'balance': balance,
+      'monthlyCount': monthlyCount,
+    };
+  }
+
+  factory UserProfile.fromMap(Map<String, dynamic> map) {
+    return UserProfile(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      email: map['email'] as String?,
+      balance: map['balance'] as double,
+      monthlyCount: map['monthlyCount'] as int,
+    );
+  }
 }
 
 

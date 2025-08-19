@@ -7,10 +7,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import '../models/user_profile.dart';
-import '../models/drink.dart';
-import '../models/consumption.dart';
-import 'hive_service.dart';
+import 'db_service.dart';
 
 class SyncService {
   static bool _enabled = false; // erst aktivieren, wenn Firebase eingerichtet ist
@@ -27,9 +24,10 @@ class SyncService {
   static Future<void> syncUp() async {
     if (!_enabled) return;
     final store = FirebaseFirestore.instance;
-    final users = HiveService.usersBox.values.toList();
-    final drinks = HiveService.drinksBox.values.toList();
-    final cons = HiveService.consumptionsBox.values.toList();
+    final dbService = DbService();
+    final users = await dbService.getAllUserProfiles();
+    final drinks = await dbService.getAllDrinks();
+    final cons = await dbService.getAllConsumptions();
 
     final batch = store.batch();
     for (final u in users) {

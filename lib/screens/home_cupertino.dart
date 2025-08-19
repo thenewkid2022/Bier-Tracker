@@ -1,11 +1,10 @@
 import 'package:flutter/cupertino.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 import '../models/user_profile.dart';
 import '../models/drink.dart';
 import '../models/consumption.dart';
-import '../services/hive_service.dart';
+import '../services/db_service.dart';
 import '../services/notification_service.dart';
 import '../services/payment_service.dart';
 import '../services/report_service.dart';
@@ -33,16 +32,20 @@ class _CupertinoHomeScreenState extends State<CupertinoHomeScreen> {
   }
 
   Future<void> _boot() async {
-    await HiveService.init();
+    final dbService = DbService();
+    await dbService.database;
     await SyncService.tryInitFirebase();
-    if (HiveService.drinksBox.isEmpty) {
+    
+    // Demo-Daten hinzufügen, falls keine vorhanden
+    final drinks = await dbService.getAllDrinks();
+    if (drinks.isEmpty) {
       final demo = [
         Drink(id: const Uuid().v4(), name: 'Bier', price: 2.0, stock: 50, iconKey: 'beer'),
         Drink(id: const Uuid().v4(), name: 'Cola', price: 1.5, stock: 40, iconKey: 'soda'),
         Drink(id: const Uuid().v4(), name: 'Wein', price: 3.5, stock: 20, iconKey: 'wine'),
       ];
       for (final d in demo) {
-        HiveService.drinksBox.put(d.id, d);
+        await dbService.saveDrink(d);
       }
     }
     setState(() {});
@@ -132,10 +135,16 @@ class _CupertinoHomeScreenState extends State<CupertinoHomeScreen> {
         ),
         const SizedBox(height: 8),
         Expanded(
-          child: ValueListenableBuilder<Box<UserProfile>>(
-            valueListenable: HiveService.usersBox.listenable(),
-            builder: (context, box, _) {
-              final users = box.values.toList();
+          child: FutureBuilder<List<UserProfile>>(
+            future: DbService().getAllUserProfiles(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CupertinoActivityIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Fehler: ${snapshot.error}'));
+              }
+              final users = snapshot.data ?? [];
               if (users.isEmpty) {
                 return const Center(
                   child: Text('Noch keine Nutzer', style: TextStyle(color: CupertinoColors.secondaryLabel)),
@@ -222,10 +231,18 @@ class _CupertinoHomeScreenState extends State<CupertinoHomeScreen> {
   }
 
   Widget _buildUserSelector() {
-    return ValueListenableBuilder<Box<UserProfile>>(
-      valueListenable: HiveService.usersBox.listenable(),
-      builder: (context, box, _) {
-        final users = box.values.toList();
+    return FutureBuilder<List<UserProfile>>(
+      future: DbService().getAllUserProfiles(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CupertinoButton(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: CupertinoColors.systemGrey5,
+            onPressed: null,
+            child: CupertinoActivityIndicator(),
+          );
+        }
+        final users = snapshot.data ?? [];
         return CupertinoButton(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           color: CupertinoColors.systemGrey5,
@@ -324,11 +341,17 @@ class _CupertinoHomeScreenState extends State<CupertinoHomeScreen> {
     );
   }
 
-  Widget _buildDrinksGrid({bool isWide = false}) {
-    return ValueListenableBuilder<Box<Drink>>(
-      valueListenable: HiveService.drinksBox.listenable(),
-      builder: (context, box, _) {
-        final drinks = box.values.toList();
+    Widget _buildDrinksGrid({bool isWide = false}) {
+    return FutureBuilder<List<Drink>>(
+      future: DbService().getAllDrinks(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CupertinoActivityIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Fehler: ${snapshot.error}'));
+        }
+        final drinks = snapshot.data ?? [];
         final crossAxis = isWide ? 6 : 3; // adaptiv für iPad/iPhone
         return GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -400,12 +423,17 @@ class _CupertinoHomeScreenState extends State<CupertinoHomeScreen> {
       timestamp: DateTime.now(),
       price: drink.price,
     );
-    await HiveService.consumptionsBox.put(con.id, con);
+    final dbService = DbService();
+    await dbService.addConsumption(con);
+    
+    // Drink Stock aktualisieren
     drink.stock = drink.stock - 1;
-    await drink.save();
+    await dbService.saveDrink(drink);
+    
+    // User Balance aktualisieren
     user.balance = user.balance - drink.price;
     user.monthlyCount = user.monthlyCount + 1;
-    await user.save();
+    await dbService.saveUserProfile(user);
 
     final tips = [
       'Prost! Denk an Wasser zwischendurch! 💧',
@@ -444,7 +472,8 @@ class _CupertinoHomeScreenState extends State<CupertinoHomeScreen> {
               final name = controller.text.trim();
               if (name.isEmpty) return;
               final user = UserProfile(id: const Uuid().v4(), name: name, email: emailController.text.trim().isEmpty ? null : emailController.text.trim());
-              await HiveService.usersBox.put(user.id, user);
+              final dbService = DbService();
+              await dbService.saveUserProfile(user);
               setState(() => selectedUser = user);
               if (context.mounted) Navigator.pop(context);
             },
@@ -510,16 +539,18 @@ class _CupertinoHomeScreenState extends State<CupertinoHomeScreen> {
   }
 
   Future<void> _generateMonthlyPdf() async {
-    final users = HiveService.usersBox.values.toList();
-    final drinks = HiveService.drinksBox.values.toList();
-    final cons = HiveService.consumptionsBox.values.toList();
+    final dbService = DbService();
+    final users = await dbService.getAllUserProfiles();
+    final drinks = await dbService.getAllDrinks();
+    final cons = await dbService.getAllConsumptions();
     final data = await ReportService.generateMonthlyReport(users: users, drinks: drinks, consumptions: cons);
     await Printing.layoutPdf(onLayout: (_) async => data);
   }
 
   Future<void> _openLeaderboard() async {
-    final users = HiveService.usersBox.values.toList()
-      ..sort((a, b) => b.monthlyCount.compareTo(a.monthlyCount));
+    final dbService = DbService();
+    final users = await dbService.getAllUserProfiles();
+    users.sort((a, b) => b.monthlyCount.compareTo(a.monthlyCount));
     await showCupertinoModalPopup(
       context: context,
       builder: (context) {

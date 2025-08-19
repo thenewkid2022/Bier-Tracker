@@ -1,19 +1,11 @@
-import 'package:hive/hive.dart';
 
-part 'drink.g.dart';
 
-@HiveType(typeId: 2)
-class Drink extends HiveObject {
-  @HiveField(0)
+class Drink {
   String id;
-  @HiveField(1)
   String name;
-  @HiveField(2)
   double price;
-  @HiveField(3)
   int stock;
-  @HiveField(4)
-  String iconKey; // z.B. 'beer', 'soda', für vorgegebene Icon-Auswahl
+  String iconKey;
 
   Drink({
     required this.id,
@@ -22,6 +14,26 @@ class Drink extends HiveObject {
     required this.stock,
     required this.iconKey,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'price': price,
+      'stock': stock,
+      'iconKey': iconKey,
+    };
+  }
+
+  factory Drink.fromMap(Map<String, dynamic> map) {
+    return Drink(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      price: map['price'] as double,
+      stock: map['stock'] as int,
+      iconKey: map['iconKey'] as String,
+    );
+  }
 }
 
 

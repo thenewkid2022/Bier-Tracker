@@ -1,18 +1,10 @@
-import 'package:hive/hive.dart';
 
-part 'consumption.g.dart';
 
-@HiveType(typeId: 3)
-class Consumption extends HiveObject {
-  @HiveField(0)
+class Consumption {
   String id;
-  @HiveField(1)
   String userId;
-  @HiveField(2)
   String drinkId;
-  @HiveField(3)
   DateTime timestamp;
-  @HiveField(4)
   double price;
 
   Consumption({
@@ -22,6 +14,26 @@ class Consumption extends HiveObject {
     required this.timestamp,
     required this.price,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'userId': userId,
+      'drinkId': drinkId,
+      'timestamp': timestamp.millisecondsSinceEpoch,
+      'price': price,
+    };
+  }
+
+  factory Consumption.fromMap(Map<String, dynamic> map) {
+    return Consumption(
+      id: map['id'] as String,
+      userId: map['userId'] as String,
+      drinkId: map['drinkId'] as String,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
+      price: map['price'] as double,
+    );
+  }
 }
 
 

@@ -1,10 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../models/drink.dart';
 import '../models/user_profile.dart';
-import '../services/hive_service.dart';
+import '../services/db_service.dart';
 import '../widgets/drink_icon.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -117,7 +116,8 @@ class _DrinksTabState extends State<_DrinksTab> {
       iconKey: iconKey,
     );
     
-    await HiveService.drinksBox.put(d.id, d);
+    final dbService = DbService();
+    await dbService.saveDrink(d);
     nameCtrl.clear();
     priceCtrl.clear();
     stockCtrl.text = '0';
@@ -239,10 +239,16 @@ class _DrinksTabState extends State<_DrinksTab> {
           ),
           const SizedBox(height: 12),
           Expanded(
-            child: ValueListenableBuilder<Box<Drink>>(
-              valueListenable: HiveService.drinksBox.listenable(),
-              builder: (context, box, _) {
-                final list = box.values.toList();
+            child: FutureBuilder<List<Drink>>(
+              future: DbService().getAllDrinks(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CupertinoActivityIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Fehler: ${snapshot.error}'));
+                }
+                final list = snapshot.data ?? [];
                 if (list.isEmpty) {
                   return const Center(
                     child: Text(
@@ -281,8 +287,7 @@ class _DrinksTabState extends State<_DrinksTab> {
                                 Text(
                                   'Lager: ${d.stock} | ${d.price.toStringAsFixed(2)} CHF',
                                   style: const TextStyle(
-                                    color: CupertinoColors.secondaryLabel,
-                                  ),
+                                    color: CupertinoColors.secondaryLabel),
                                 ),
                               ],
                             ),
@@ -375,10 +380,16 @@ class _InventoryTab extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: ValueListenableBuilder<Box<Drink>>(
-              valueListenable: HiveService.drinksBox.listenable(),
-              builder: (context, box, _) {
-                final list = box.values.toList();
+            child: FutureBuilder<List<Drink>>(
+              future: DbService().getAllDrinks(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CupertinoActivityIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Fehler: ${snapshot.error}'));
+                }
+                final list = snapshot.data ?? [];
                 if (list.isEmpty) {
                   return const Center(
                     child: Text(
@@ -492,7 +503,8 @@ class _InventoryItemState extends State<_InventoryItem> {
               final add = int.tryParse(addCtrl.text) ?? 0;
               if (add <= 0) return;
               widget.drink.stock += add;
-              await widget.drink.save();
+              final dbService = DbService();
+              await dbService.saveDrink(widget.drink);
               addCtrl.clear();
               setState(() {});
             },
@@ -522,10 +534,16 @@ class _UsersTab extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: ValueListenableBuilder<Box<UserProfile>>(
-              valueListenable: HiveService.usersBox.listenable(),
-              builder: (context, box, _) {
-                final users = box.values.toList();
+            child: FutureBuilder<List<UserProfile>>(
+              future: DbService().getAllUserProfiles(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CupertinoActivityIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Fehler: ${snapshot.error}'));
+                }
+                final users = snapshot.data ?? [];
                 if (users.isEmpty) {
                   return const Center(
                     child: Text(
@@ -600,7 +618,8 @@ class _UsersTab extends StatelessWidget {
                               if (confirmed == true) {
                                 u.balance = 0;
                                 u.monthlyCount = 0;
-                                await u.save();
+                                final dbService = DbService();
+                                await dbService.saveUserProfile(u);
                               }
                             },
                             child: const Text('Reset'),
@@ -629,7 +648,23 @@ class _UsersTab extends StatelessWidget {
                                 ),
                               );
                               if (confirmed == true) {
-                                await box.delete(u.id);
+                                // TODO: Implement delete user functionality
+                                // For now, just show a message
+                                if (context.mounted) {
+                                  showCupertinoDialog(
+                                    context: context,
+                                    builder: (context) => CupertinoAlertDialog(
+                                      title: const Text('Info'),
+                                      content: const Text('Löschen-Funktion noch nicht implementiert'),
+                                      actions: [
+                                        CupertinoDialogAction(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
                               }
                             },
                             child: const Text('Löschen'),

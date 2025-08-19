@@ -7,25 +7,20 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'models/user_profile.dart';
-import 'models/drink.dart';
-import 'models/consumption.dart';
 import 'screens/home_cupertino.dart';
 import 'services/notification_service.dart';
+import 'services/db_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
   // Locale/Intl für Web initialisieren (de_CH)
   Intl.defaultLocale = 'de_CH';
   await initializeDateFormatting('de_CH');
-  // Hive Adapter registrieren
-  Hive.registerAdapter(UserProfileAdapter());
-  Hive.registerAdapter(DrinkAdapter());
-  Hive.registerAdapter(ConsumptionAdapter());
+  // Datenbank initialisieren
+  final dbService = DbService();
+  await dbService.database;
   await NotificationService.initialize();
   runApp(const BierLoungeApp());
 }
