@@ -5,10 +5,10 @@ workflows:
     instance_type: mac_mini_m1
     environment:
       vars:
-        XCODE_VERSION: "15.4"
+        XCODE_VERSION: "latest"
       flutter: stable
-      xcode: 15.4
-      cocoapods: default
+      xcode: latest
+      cocoapods: 1.16.2
       groups:
         - appstore_credentials  # Erbt die App Store Connect Vars aus dem UI
       ios_signing:
@@ -17,10 +17,11 @@ workflows:
     scripts:
       - name: Install Flutter dependencies
         script: flutter pub get
-      - name: Install Pods
+      - name: Clean and Install Pods
         script: |
           cd ios
-          pod install
+          rm -rf Pods Podfile.lock
+          pod install --repo-update
       - name: Set up code signing
         script: xcode-project use-profiles
       - name: Build IPA
