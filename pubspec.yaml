@@ -70,12 +70,8 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   lints: ^6.0.0
-  
-  # Test-Tools
-  test_api: ^0.7.7
-  vm_service: ^15.0.2
 
-# Dependency Overrides (unnötige entfernt, nur für Kompatibilität behalten)
+# Dependency Overrides (test_api und vm_service entfernt, da redundant und konfliktverursachend; nur notwendige behalten)
 dependency_overrides:
   meta: 1.16.0
   material_color_utilities: 0.11.1
