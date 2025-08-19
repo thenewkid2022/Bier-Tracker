@@ -17,13 +17,15 @@ workflows:
     scripts:
       - name: Install Flutter dependencies
         script: flutter pub get
+      - name: Flutter Clean
+        script: flutter clean
+      - name: Update Flutter iOS Config
+        script: flutter build ios --config-only --release --no-codesign
       - name: Clean and Install Pods
         script: |
           cd ios
           rm -rf Pods Podfile.lock
           pod install --repo-update
-      - name: Update Flutter iOS Config
-        script: flutter build ios --config-only --release --no-codesign
       - name: Set up code signing
         script: xcode-project use-profiles
       - name: Build IPA
