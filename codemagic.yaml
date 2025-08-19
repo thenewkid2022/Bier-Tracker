@@ -16,7 +16,7 @@ workflows:
         script: flutter pub get
       - name: Set up code signing
         script: |
-          app-store-connect fetch-signing-files "de.bierlounge.tracker" --type IOS_APP_STORE --create --delete-stale-profiles
+          app-store-connect fetch-signing-files "de.bierlounge.tracker" --type IOS_APP_STORE --create --delete-stale-profiles --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
       - name: Build IPA for TestFlight
         script: |
           flutter build ipa --release \
