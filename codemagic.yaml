@@ -252,6 +252,7 @@ publishing:
 #    - submit_to_testflight: true aktiviert automatischen Upload zu TestFlight
 #    - Nach erfolgreichem Build wird die App automatisch zu TestFlight hochgeladen
 #    - TestFlight-Upload erfolgt nur bei Release-Workflows (release/* branches und tags)
+#    - UDID 1755562821 ist bereits für Development registriert, aber TestFlight nutzt App Store Distribution
 #
 # 4. BUILD-TRIGGER:
 #    - Master/Main Branch: Automatische Builds bei jedem Push
