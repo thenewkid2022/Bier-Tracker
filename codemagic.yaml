@@ -3,71 +3,29 @@
 # Diese Konfiguration behebt "outdated build settings" Fehler
 
 workflows:
-  ios-release-workflow:
-    name: iOS Release Build
+  ios-build:
+    name: iOS Build for TestFlight
+    max_build_duration: 120
+    instance_type: mac_pro_m1  # Schneller Mac für Builds
     environment:
-      flutter: stable
-      xcode: latest
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.thenewkid2022.bierlounge-tracker
-        development_team: 767Q6NXN2U
+      vars:
+        XCODE_VERSION: "15.4"  # Neueste Xcode-Version für iOS
+      flutter: stable  # Neueste stabile Flutter (mit Dart >=3.5 für macros)
+      xcode: 15.4
       cocoapods: default
-      ruby: default
-      node: latest
-    
     scripts:
-      # Schritt 0: Git-Konfiguration sicherstellen
-      - name: Configure Git
+      - name: Install Flutter dependencies
+        script: flutter pub get
+      - name: Set up code signing
         script: |
-          git config --global init.defaultBranch main
-          git branch -M main
-          # Explizit den main Branch klonen, falls master als Standard gesetzt ist
-          if [ "$(git branch --show-current)" != "main" ]; then
-            git checkout -b main origin/main
-          fi
-      
-      # Schritt 1: Flutter config-only ausführen (behebt outdated settings)
-      - name: Fix Flutter Build Settings
+          app-store-connect fetch-signing-files "com.thenewkid2022.bierlounge-tracker" --type ios_app_store --create
+      - name: Build IPA for TestFlight
         script: |
-          flutter build ios --config-only --release
-      
-      # Schritt 2: Flutter-Abhängigkeiten aktualisieren
-      - name: Update Flutter Dependencies
-        script: |
-          flutter pub get
-          flutter clean
-          flutter pub get
-      
-      # Schritt 3: iOS-Abhängigkeiten installieren
-      - name: Install iOS Dependencies
-        script: |
-          cd ios
-          pod install
-          cd ..
-      
-      # Schritt 4: iOS IPA erstellen
-      - name: Build iOS IPA
-        script: |
-          flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
-    
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-    
-    triggering:
-      branch_patterns:
-        - pattern: 'main'
-          include: true
-          source: true
-      events:
-        - push
-    
-    cache:
-      cache_paths:
-        - ~/.pub-cache
-        - ~/.cocoapods
-        - ~/.cache/flutter
-    
-    max_build_duration: 60
-    instance_type: mac_mini_m2
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_API_KEY  # Das setzt du in Codemagic UI unter Environment Variables (erhalte API-Key von Apple Developer)
+        submit_to_testflight: true
