@@ -68,20 +68,20 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
-  lints: ^6.0.0
+  flutter_lints: ^5.0.0  # Downgraded für Dart 3.5
+  lints: ^5.1.1  # Downgraded für Dart 3.5
   hive_generator: ^2.0.1
-  build_runner: ^2.4.7
-  build_runner_core: ^7.3.1
+  build_runner: ^2.4.13  # Höchste für Dart 3.5
+  build_runner_core: ^7.3.2
   
   # Build-Tools
-  build: ^3.0.2
+  build: ^2.4.1  # Downgraded für Dart 3.5
   build_config: ^1.2.0
-  build_resolvers: ^3.0.2
-  source_gen: ^3.1.0
+  build_resolvers: ^2.4.2  # Downgraded für Dart 3.5
+  source_gen: ^1.5.0  # Downgraded für Dart 3.5 und hive_generator 2.0.1
   source_helper: ^1.3.5
   
-  # Analyse-Tools (analyzer entfernt - wird über overrides gelöst)
+  # Analyse-Tools
   dart_style: ^3.1.2
   
   # Test-Tools
@@ -90,30 +90,29 @@ dev_dependencies:
 
 # Dependency Overrides - löst Konflikte zwischen Paketen
 dependency_overrides:
-  # Fix für hive_generator Konflikt: analyzer <7.0.0 erforderlich
-  analyzer: ^6.8.0
-  # Fix für hive_generator Konflikt: source_gen ^1.0.0 erforderlich
-  source_gen: ^1.0.0
-  # Fix für hive_generator Konflikt: build ^2.0.0 erforderlich
-  build: ^2.0.0
-  # Fix für hive_generator Konflikt: build_config ^1.0.0 erforderlich
+  # Fix für hive_generator: analyzer <7.0 (kompatibel mit Dart 3.5.1)
+  analyzer: ^6.1.0
+  # Fix für hive_generator: source_gen ^2.0.0 (angepasst, override entfernt da neu passt)
+  # Fix für hive_generator: build ^2.4.1 (angepasst)
+  build: ^2.4.1
+  # Fix für hive_generator: build_config ^1.0.0
   build_config: ^1.0.0
-  # Fix für hive_generator Konflikt: build_resolvers ^2.0.0 erforderlich
-  build_resolvers: ^2.0.0
-  # Fix für flutter_test Konflikt: vm_service 15.0.0 erforderlich
+  # Fix für hive_generator: build_resolvers ^2.4.2 (angepasst)
+  build_resolvers: ^2.4.2
+  # Fix für flutter_test: vm_service 15.0.0
   vm_service: 15.0.0
-  # Fix für flutter_test Konflikt: test_api 0.7.4 erforderlich
+  # Fix für flutter_test: test_api 0.7.4
   test_api: 0.7.4
-  # Fix für flutter_test Konflikt: meta 1.16.0 erforderlich
+  # Fix für flutter_test: meta 1.16.0
   meta: 1.16.0
-  # Fix für flutter_test Konflikt: material_color_utilities 0.11.1 erforderlich
+  # Fix für flutter_test: material_color_utilities 0.11.1
   material_color_utilities: 0.11.1
-  # Fix für flutter_test Konflikt: characters 1.4.0 erforderlich
+  # Fix für flutter_test: characters 1.4.0
   characters: 1.4.0
-  # Fix für source_gen Konflikt: dart_style ^2.0.0 erforderlich
+  # Fix für source_gen: dart_style ^2.3.8
   dart_style: ^2.3.8
-  # Weitere transitive Abhängigkeiten kompatibel machen
-  _fe_analyzer_shared: ^88.0.0
+  # Transitive: _fe_analyzer_shared ^87.0.0 (kompatibel mit analyzer 6.11.0)
+  _fe_analyzer_shared: ^87.0.0
 
 flutter:
   uses-material-design: true
