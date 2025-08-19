@@ -14,6 +14,7 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.thenewkid2022.bierlounge-tracker
+        development_team: 767Q6NXN2U
     scripts:
       - name: Set up code signing
         script: xcode-project use-profiles
@@ -21,11 +22,9 @@ workflows:
         script: flutter pub get
       - name: Flutter Clean
         script: flutter clean
-      - name: Clean Xcode DerivedData and Flutter iOS Files
+      - name: Clean Xcode DerivedData
         script: |
           rm -rf $HOME/Library/Developer/Xcode/DerivedData/*
-          cd ios
-          rm -rf Flutter/AppframeworkInfo.plist Flutter/Flutter.podspec
       - name: Update Flutter iOS Config
         script: flutter build ios --config-only --release --no-codesign --verbose
       - name: Increment Build Number
