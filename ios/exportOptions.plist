@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Distribution-Methode: App Store, Ad Hoc, Enterprise, Development -->
+	<!-- Distribution-Methode: App Store für TestFlight -->
 	<key>method</key>
 	<string>app-store</string>
 	
@@ -36,7 +36,7 @@
 		<string>$(APP_STORE_CONNECT_API_KEY)</string>
 	</dict>
 	
-	<!-- Upload zu App Store Connect -->
+	<!-- Upload zu App Store Connect für TestFlight -->
 	<key>uploadBitcode</key>
 	<false/>
 	<key>uploadSymbols</key>
@@ -132,7 +132,7 @@
 	
 	<!-- Bundle-Minimum-OS-Version -->
 	<key>bundleMinimumOSVersion</key>
-	<string>12.0</string>
+	<string>13.0</string>
 	
 	<!-- Bundle-URL-Types -->
 	<key>bundleURLTypes</key>
@@ -212,7 +212,7 @@
 			<string>2</string>
 		</array>
 		<key>MinimumOSVersion</key>
-		<string>12.0</string>
+		<string>13.0</string>
 	</dict>
 </dict>
 </plist>

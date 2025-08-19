@@ -13,7 +13,7 @@ workflows:
       xcode: latest
       # iOS-SDK - Korrigiert für Codemagic-Validierung
       ios_signing:
-        distribution_type: app_store  # App Store Distribution (kann zu 'ad-hoc' oder 'enterprise' geändert werden)
+        distribution_type: app_store  # App Store Distribution für TestFlight
         bundle_identifier: com.thenewkid2022.bierlounge-tracker
       # CocoaPods
       cocoapods: default
@@ -102,7 +102,7 @@ workflows:
       xcode: latest
       # iOS-SDK - Korrigiert für Codemagic-Validierung
       ios_signing:
-        distribution_type: app_store  # App Store Distribution (kann zu 'ad-hoc' oder 'enterprise' geändert werden)
+        distribution_type: app_store  # App Store Distribution für TestFlight
         bundle_identifier: com.thenewkid2022.bierlounge-tracker
       cocoapods: default
       ruby: default
@@ -210,12 +210,12 @@ notifications:
 
 # Build-Status-Integration
 publishing:
-  # App Store Connect (für spätere Veröffentlichung)
+  # App Store Connect (für TestFlight und App Store)
   app_store_connect:
     api_key: $APP_STORE_CONNECT_API_KEY
     key_id: $APP_STORE_CONNECT_KEY_ID
     issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-    submit_to_testflight: false  # Setze auf true für TestFlight-Upload
+    submit_to_testflight: true  # Aktiviert für TestFlight-Upload
   
   # GitHub Releases (optional)
   github_releases:
@@ -241,14 +241,15 @@ publishing:
 #    - APP_STORE_CONNECT_API_KEY, APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID
 #    - GITHUB_TOKEN (falls GitHub Releases aktiviert)
 #
-# 3. EXPORT OPTIONS:
-#    - Die exportOptions.plist ist bereits in ios/ für IPA-Export erstellt
-#    - Konfiguriere die Distribution-Methode (App Store, Ad Hoc, Enterprise)
+# 3. TESTFLIGHT:
+#    - submit_to_testflight: true aktiviert automatischen Upload zu TestFlight
+#    - Nach erfolgreichem Build wird die App automatisch zu TestFlight hochgeladen
+#    - TestFlight-Upload erfolgt nur bei Release-Workflows (release/* branches und tags)
 #
 # 4. BUILD-TRIGGER:
 #    - Master/Main Branch: Automatische Builds bei jedem Push
-#    - Release Branches: Automatische Release-Builds
-#    - Tags: Automatische Version-Builds
+#    - Release Branches: Automatische Release-Builds mit TestFlight-Upload
+#    - Tags: Automatische Version-Builds mit TestFlight-Upload
 #
 # 5. CACHE:
 #    - Aktiviert für schnellere Builds
