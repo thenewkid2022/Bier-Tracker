@@ -6,11 +6,11 @@ workflows:
     environment:
       vars:
         XCODE_VERSION: "15.4"
-      flutter: 3.35.1  # Spezifisch für Dart-Fix
+      flutter: 3.24.1  # Bewährte Version mit Dart 3.5 für _macros
       xcode: 15.4
       cocoapods: default
       groups:
-        - appstore_credentials  # Importiert API-Vars
+        - appstore_credentials  # Dein Gruppenname
     scripts:
       - name: Install Flutter dependencies
         script: flutter pub get
