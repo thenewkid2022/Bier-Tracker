@@ -5,8 +5,8 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.5.0 <4.0.0'  # Aktualisiert für Kompatibilität mit neueren Features, vermeidet alte SDK-Probleme
-  flutter: ">=3.24.0"  # Passend zu Dart 3.5+
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: ">=3.24.0"
 
 dependencies:
   flutter:
@@ -14,9 +14,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # Lokale Datenspeicherung (neu: sqflite statt Hive)
-  sqflite: ^2.3.3
-  path_provider: ^2.1.4  # Schon da, aber update für Sicherheit
+  # Lokale Datenspeicherung
+  sqflite: ^2.3.3+1  # Aktualisiert für bessere Kompatibilität
+  path_provider: ^2.1.4
 
   # Benachrichtigungen
   flutter_local_notifications: ^19.4.0
@@ -38,7 +38,7 @@ dependencies:
   # QR-Code Generierung
   qr_flutter: ^4.1.0
 
-  # Firebase (für Sync-Service)
+  # Firebase
   cloud_firestore: ^6.0.0
   cloud_firestore_platform_interface: ^7.0.0
   cloud_firestore_web: ^5.0.0
@@ -71,14 +71,12 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   lints: ^6.0.0
   
-  # Test-Tools (behält nur Nötiges, entfernt Generatoren)
+  # Test-Tools
   test_api: ^0.7.7
   vm_service: ^15.0.2
 
-# Dependency Overrides (entfernt unnötige, behält nur für flutter_test-Kompatibilität)
+# Dependency Overrides (unnötige entfernt, nur für Kompatibilität behalten)
 dependency_overrides:
-  vm_service: 15.0.0
-  test_api: 0.7.4
   meta: 1.16.0
   material_color_utilities: 0.11.1
   characters: 1.4.0

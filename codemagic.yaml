@@ -31,18 +31,15 @@ workflows:
       - name: Clean and Install Pods
         script: |
           cd ios
+          pod deintegrate --verbose  # Hinzugefügt, um alte Pods vollständig zu entfernen
           rm -rf Pods Podfile.lock
           pod install --repo-update --verbose
-      - name: Pod Update
-        script: |
-          cd ios
-          pod update --verbose
       - name: Fix Pod Configurations
         script: |
           cd ios/Flutter
-          echo '#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"' >> Debug.xcconfig
-          echo '#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"' >> Release.xcconfig
-          echo '#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"' >> Profile.xcconfig
+          echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"' >> Debug.xcconfig
+          echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"' >> Release.xcconfig
+          echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"' >> Profile.xcconfig
       - name: Build IPA
         script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist --verbose --no-tree-shake-icons
       - name: Check Updated Files
