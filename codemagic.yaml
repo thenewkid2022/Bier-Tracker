@@ -2,15 +2,15 @@ workflows:
   ios-build:
     name: iOS Build for TestFlight
     max_build_duration: 120
-    instance_type: mac_mini_m1  # Gültiger Wert: mac_mini_m1 (für schnelle M1-Builds)
+    instance_type: mac_mini_m1
     environment:
       vars:
         XCODE_VERSION: "15.4"
-      flutter: 3.27.0  # Mit Dart 3.6 für Deps-Kompatibilität
+      flutter: stable
       xcode: 15.4
       cocoapods: default
       groups:
-        - appstore_credentials  # Dein Gruppenname
+        - appstore_credentials
     scripts:
       - name: Install Flutter dependencies
         script: flutter pub get
@@ -25,7 +25,7 @@ workflows:
       - build/ios/ipa/*.ipa
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY  # Private Key
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER  # Key ID
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID  # Issuer ID
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
