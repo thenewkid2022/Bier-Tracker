@@ -1,29 +1,21 @@
 # Codemagic CI/CD Konfiguration für BierLounge Tracker
-# Diese Datei definiert den automatischen Build- und Deployment-Workflow
+# Vereinfachte Konfiguration für iOS-Release-Builds
+# Diese Konfiguration behebt "outdated build settings" Fehler
 
-# Workflow-Konfiguration
 workflows:
-  # iOS Release Build Workflow - Hauptworkflow für iOS-Builds
   ios-release-workflow:
     name: iOS Release Build
     environment:
-      # Flutter-Version
       flutter: stable
-      # Xcode-Version (aktuelle stabile Version)
       xcode: latest
-      # iOS-SDK und Code-Signing
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.thenewkid2022.bierlounge-tracker
         development_team: 767Q6NXN2U
-      # CocoaPods
       cocoapods: default
-      # Ruby-Version für CocoaPods
       ruby: default
-      # Node.js für Flutter-Builds
       node: latest
     
-    # Build-Schritte - Korrigiert für den "outdated settings" Fehler
     scripts:
       # Schritt 1: Flutter config-only ausführen (behebt outdated settings)
       - name: Fix Flutter Build Settings
@@ -47,81 +39,17 @@ workflows:
       # Schritt 4: iOS IPA erstellen
       - name: Build iOS IPA
         script: |
-          flutter build ipa --release --export-options-plist /Users/builder/export_options.plist
+          flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
     
-    # Artefakte sammeln
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
     
-    # Build-Trigger
     triggering:
-      # Nur bei Änderungen im main Branch
       branch_patterns:
         - pattern: 'main'
           include: true
           source: true
-      # Nur bei Push-Events
-      events:
-        - push
-    
-    # Build-Cache aktivieren
-    cache:
-      cache_paths:
-        - ~/.pub-cache
-        - ~/.cocoapods
-        - ~/.cache/flutter
-    
-    # Build-Timeout
-    max_build_duration: 60
-    
-    # Build-Parallelität - Mac Mini M2 für bessere Performance
-    instance_type: mac_mini_m2
-
-  # iOS Development Build Workflow (optional)
-  ios-dev-workflow:
-    name: iOS Development Build
-    environment:
-      flutter: stable
-      xcode: latest
-      ios_signing:
-        distribution_type: development
-        bundle_identifier: com.thenewkid2022.bierlounge-tracker
-        development_team: 767Q6NXN2U
-      cocoapods: default
-      ruby: default
-      node: latest
-    
-    scripts:
-      - name: Fix Flutter Build Settings
-        script: |
-          flutter build ios --config-only --debug
-      
-      - name: Update Flutter Dependencies
-        script: |
-          flutter pub get
-          flutter clean
-          flutter pub get
-      
-      - name: Install iOS Dependencies
-        script: |
-          cd ios
-          pod install
-          cd ..
-      
-      - name: Build iOS Debug
-        script: |
-          flutter build ios --debug
-    
-    artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-    
-    triggering:
-      branch_patterns:
-        - pattern: 'develop'
-          include: true
-          source: true
       events:
         - push
     
@@ -133,75 +61,3 @@ workflows:
     
     max_build_duration: 60
     instance_type: mac_mini_m2
-
-# Globale Einstellungen
-global:
-  # Standard-Umgebung für alle Workflows
-  environment:
-    flutter: stable
-    xcode: latest
-  
-  # Standard-Cache-Einstellungen
-  cache:
-    cache_paths:
-      - ~/.pub-cache
-      - ~/.cocoapods
-      - ~/.cache/flutter
-  
-  # Standard-Timeout
-  max_build_duration: 60
-  
-  # Standard-Instanz-Typ
-  instance_type: mac_mini_m2
-
-# Notifications (optional)
-notifications:
-  email:
-    recipients:
-      - "thenewkid2022@github.com"  # Ersetze durch deine E-Mail
-
-# Build-Status-Integration
-publishing:
-  # App Store Connect (für TestFlight und App Store)
-  app_store_connect:
-    api_key: $APP_STORE_CONNECT_API_KEY
-    key_id: $APP_STORE_CONNECT_KEY_ID
-    issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-    submit_to_testflight: true  # Aktiviert für TestFlight-Upload
-    beta_groups:  # Optional: Füge Beta-Gruppen hinzu (Namen aus App Store Connect)
-      - "Interne Tester"
-      - "Beta-Gruppe 1"
-
-# Kommentare und Hinweise
-# 
-# WICHTIGE HINWEISE:
-# 
-# 1. CODE-SIGNING:
-#    - Du musst deine Code-Signing-Zertifikate in Codemagic hochladen
-#    - Gehe zu Codemagic > Teams > Code Signing
-#    - Lade deine .p12-Datei und Provisioning Profile hoch
-#    - Setze die Umgebungsvariablen entsprechend
-#
-# 2. UMWELTVARIABLEN:
-#    - Setze diese in Codemagic > Teams > Environment Variables
-#    - APP_STORE_CONNECT_API_KEY, APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID
-#
-# 3. TESTFLIGHT:
-#    - submit_to_testflight: true aktiviert automatischen Upload zu TestFlight
-#    - Nach erfolgreichem Build wird die App automatisch zu TestFlight hochgeladen
-#
-# 4. BUILD-TRIGGER:
-#    - Main Branch: Automatische Release-Builds bei jedem Push
-#    - Develop Branch: Automatische Development-Builds bei jedem Push
-#
-# 5. CACHE:
-#    - Aktiviert für schnellere Builds
-#    - Flutter, CocoaPods und andere Dependencies werden gecacht
-#
-# 6. INSTANCE TYPE:
-#    - Mac Mini M2 für optimale iOS-Build-Performance
-#
-# 7. FEHLERBEHEBUNG:
-#    - Der "flutter build ios --config-only --release" Befehl behebt den
-#      "outdated build settings" Fehler, indem er die iOS-Build-Konfiguration
-#      aktualisiert, bevor der eigentliche Build startet.
