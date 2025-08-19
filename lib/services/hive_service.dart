@@ -1,4 +1,6 @@
 import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_profile.dart';
 import '../models/drink.dart';
 import '../models/consumption.dart';
@@ -22,6 +24,11 @@ class HiveService {
   static Box<UserProfile> get usersBox => Hive.box<UserProfile>(usersBoxName);
   static Box<Drink> get drinksBox => Hive.box<Drink>(drinksBoxName);
   static Box<Consumption> get consumptionsBox => Hive.box<Consumption>(consumptionsBoxName);
+
+  // Listenable-Methoden für ValueListenableBuilder
+  static ValueListenable<Box<UserProfile>> get usersBoxListenable => usersBox.listenable();
+  static ValueListenable<Box<Drink>> get drinksBoxListenable => drinksBox.listenable();
+  static ValueListenable<Box<Consumption>> get consumptionsBoxListenable => consumptionsBox.listenable();
 }
 
 

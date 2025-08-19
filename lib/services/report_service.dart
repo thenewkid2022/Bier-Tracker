@@ -39,7 +39,7 @@ class ReportService {
             pw.Header(level: 0, child: pw.Text(title, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold))),
             pw.Paragraph(text: 'Zeitraum: ${DateFormat('dd.MM.yyyy').format(monthStart)} – ${DateFormat('dd.MM.yyyy').format(monthEnd)}'),
             pw.SizedBox(height: 12),
-            pw.Table.fromTextArray(
+            pw.TableHelper.fromTextArray(
               headers: ['Nutzer', 'Anzahl', 'Summe'],
               data: users.map((u) {
                 final list = userToCos[u.id] ?? const <Consumption>[];
@@ -55,7 +55,7 @@ class ReportService {
               return [
                 pw.SizedBox(height: 10),
                 pw.Text(u.name, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-                pw.Table.fromTextArray(
+                pw.TableHelper.fromTextArray(
                   headers: ['Zeit', 'Getränk', 'Preis'],
                   data: list.map((c) {
                     final drinkName = drinks.firstWhere((d) => d.id == c.drinkId, orElse: () => Drink(id: '-', name: 'Unbekannt', price: 0, stock: 0, iconKey: 'beer')).name;

@@ -108,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildUserSelector(ColorScheme scheme) {
     return ValueListenableBuilder<Box<UserProfile>>(
-      valueListenable: HiveService.usersBox.listenable(),
+      valueListenable: HiveService.usersBoxListenable,
       builder: (context, box, _) {
         final users = box.values.toList();
         return Row(
@@ -131,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onChanged: (u) => setState(() => selectedUser = u),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             if (selectedUser != null)
               _balanceChip(selectedUser!)
           ],
@@ -164,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDrinksGrid(ColorScheme scheme) {
     return ValueListenableBuilder<Box<Drink>>(
-      valueListenable: HiveService.drinksBox.listenable(),
+      valueListenable: HiveService.drinksBoxListenable,
       builder: (context, box, _) {
         final drinks = box.values.toList();
         return GridView.builder(
@@ -186,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2)),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2)),
                   ],
                 ),
                 padding: const EdgeInsets.all(16),
@@ -352,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const Text('Leaderboard – Dieser Monat', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
-              ...users.take(10).asMap().entries.map((e) {
+              ...users.take(10).toList().asMap().entries.map((e) {
                 final rank = e.key + 1;
                 final u = e.value;
                 final title = rank == 1 ? 'Beer King 👑' : (rank == 2 ? 'Thirsty Dragon 🐉' : 'Durstheld');

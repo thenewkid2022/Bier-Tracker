@@ -31,6 +31,12 @@ dependencies:
   # HTTP und API
   http: ^1.2.0
 
+  # QR-Code Generierung
+  qr_flutter: ^4.1.0
+
+  # Firebase (für Sync-Service)
+  cloud_firestore: ^5.1.0
+
   # Internationalisierung - Kompatibel mit flutter_localizations
   intl: ^0.20.2
 
