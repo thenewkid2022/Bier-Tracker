@@ -1,24 +1,22 @@
-# Codemagic CI/CD Konfiguration für BierLounge Tracker
-# Vereinfachte Konfiguration für iOS-Release-Builds
-# Diese Konfiguration behebt "outdated build settings" Fehler
-
 workflows:
   ios-build:
     name: iOS Build for TestFlight
     max_build_duration: 120
-    instance_type: mac_pro_m1
+    instance_type: mac_mini_m1  # Gültiger Wert: mac_mini_m1 (für schnelle M1-Builds)
     environment:
       vars:
         XCODE_VERSION: "15.4"
-      flutter: 3.35.1  # Spezifische Version für Dart >=3.5, fix für _macros
+      flutter: 3.35.1  # Spezifisch für Dart-Fix
       xcode: 15.4
       cocoapods: default
+      groups:
+        - appstore_credentials  # Importiert API-Vars
     scripts:
       - name: Install Flutter dependencies
         script: flutter pub get
       - name: Set up code signing
         script: |
-          app-store-connect fetch-signing-files "com.thenewkid2022.bierlounge-tracker" --type ios_app_store --create
+          app-store-connect fetch-signing-files "de.bierlounge.tracker" --type ios_app_store --create
       - name: Build IPA for TestFlight
         script: |
           flutter build ipa --release \
@@ -27,5 +25,7 @@ workflows:
       - build/ios/ipa/*.ipa
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_API_KEY  # Setze in Codemagic UI (von Apple Developer)
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY  # Private Key
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER  # Key ID
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID  # Issuer ID
         submit_to_testflight: true
