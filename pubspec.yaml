@@ -68,17 +68,17 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0  # Downgraded für Dart 3.5
-  lints: ^5.1.1  # Downgraded für Dart 3.5
+  flutter_lints: ^6.0.0
+  lints: ^6.0.0
   hive_generator: ^2.0.1
-  build_runner: ^2.4.13  # Höchste für Dart 3.5
-  build_runner_core: ^7.3.2
+  build_runner: ^2.7.0
+  build_runner_core: ^9.3.0
   
   # Build-Tools
-  build: ^2.4.1  # Downgraded für Dart 3.5
+  build: ^2.4.1  # Kompatibel mit hive_generator 2.0.1
   build_config: ^1.2.0
-  build_resolvers: ^2.4.2  # Downgraded für Dart 3.5
-  source_gen: ^1.5.0  # Downgraded für Dart 3.5 und hive_generator 2.0.1
+  build_resolvers: ^2.4.2  # Kompatibel mit hive_generator 2.0.1
+  source_gen: ^1.5.0  # Kompatibel mit hive_generator 2.0.1
   source_helper: ^1.3.5
   
   # Analyse-Tools
@@ -111,8 +111,8 @@ dependency_overrides:
   characters: 1.4.0
   # Fix für source_gen: dart_style ^2.3.8
   dart_style: ^2.3.8
-  # Transitive: _fe_analyzer_shared ^87.0.0 (kompatibel mit analyzer 6.11.0)
-  _fe_analyzer_shared: ^87.0.0
+  # Transitive: _fe_analyzer_shared kompatibel mit analyzer 6.1.0
+  _fe_analyzer_shared: ^85.0.0
 
 flutter:
   uses-material-design: true

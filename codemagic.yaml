@@ -6,7 +6,7 @@ workflows:
     environment:
       vars:
         XCODE_VERSION: "15.4"
-      flutter: 3.24.1  # Bewährte Version mit Dart 3.5 für _macros
+      flutter: 3.27.0  # Mit Dart 3.6 für Deps-Kompatibilität
       xcode: 15.4
       cocoapods: default
       groups:
