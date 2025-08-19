@@ -9,19 +9,33 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screens/home_cupertino.dart';
 import 'services/notification_service.dart';
 import 'services/db_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Firebase initialisieren
+  await Firebase.initializeApp();
+  
+  // Firestore-Deprecation-Fixes
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
+  await FirebaseFirestore.instance.enablePersistentCacheIndexAutoCreation();
+  
   // Locale/Intl für Web initialisieren (de_CH)
   Intl.defaultLocale = 'de_CH';
   await initializeDateFormatting('de_CH');
+  
   // Datenbank initialisieren
   final dbService = DbService();
   await dbService.database;
   await NotificationService.initialize();
+  
   runApp(const BierLoungeApp());
 }
 

@@ -6,21 +6,21 @@ workflows:
     environment:
       vars:
         XCODE_VERSION: "latest"
-      flutter: "3.35.1"  # Korrekte lokale Flutter-Version
+      flutter: "3.35.1"  # Deine lokale Version – definitiv 3.35.1
       xcode: latest
       cocoapods: 1.16.2
       groups:
-        - appstore_credentials  # Erbt die App Store Connect Vars aus dem UI
+        - appstore_credentials
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.thenewkid2022.bierlounge-tracker
     scripts:
       - name: Set up code signing
         script: xcode-project use-profiles
-      - name: Install Flutter dependencies
-        script: flutter pub get --verbose
       - name: Flutter Clean
         script: flutter clean --verbose
+      - name: Install Flutter dependencies  # Verschoben NACH clean, um Generated.xcconfig zu regenerieren
+        script: flutter pub get --verbose
       - name: Clean Xcode DerivedData
         script: |
           rm -rf $HOME/Library/Developer/Xcode/DerivedData/*
@@ -29,7 +29,7 @@ workflows:
       - name: Clean and Install Pods
         script: |
           cd ios
-          pod deintegrate --verbose  # Hinzugefügt, um alte Pods vollständig zu entfernen
+          pod deintegrate --verbose
           rm -rf Pods Podfile.lock
           pod install --repo-update --verbose
       - name: Fix Pod Configurations
@@ -38,7 +38,7 @@ workflows:
           echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"' >> Debug.xcconfig
           echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"' >> Release.xcconfig
           echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"' >> Profile.xcconfig
-      - name: Update Flutter iOS Config  # Verschoben nach Pods, um Overwrites zu vermeiden
+      - name: Update Flutter iOS Config  # Bleibt nach Pods
         script: flutter build ios --config-only --release --no-codesign --verbose
       - name: Build IPA
         script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist --verbose --no-tree-shake-icons
