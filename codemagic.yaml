@@ -6,7 +6,7 @@ workflows:
     environment:
       vars:
         XCODE_VERSION: "latest"
-      flutter: "3.32.8"
+      flutter: stable  # Geändert zu stable (derzeit 3.35.1), um Dependency-Konflikte mit vm_service zu lösen und mit lokaler Version zu matchen
       xcode: latest
       cocoapods: 1.16.2
       groups:
