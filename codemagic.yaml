@@ -26,6 +26,8 @@ workflows:
           rm -rf $HOME/Library/Developer/Xcode/DerivedData/*
           cd ios
           rm -rf Flutter/AppframeworkInfo.plist Flutter/Flutter.podspec
+      - name: Update Flutter iOS Config
+        script: flutter build ios --config-only --release --verbose
       - name: Increment Build Number
         script: |
           cd ios
