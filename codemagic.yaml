@@ -216,6 +216,13 @@ publishing:
     key_id: $APP_STORE_CONNECT_KEY_ID
     issuer_id: $APP_STORE_CONNECT_ISSUER_ID
     submit_to_testflight: true  # Aktiviert für TestFlight-Upload
+    beta_groups:  # Optional: Füge Beta-Gruppen hinzu (Namen aus App Store Connect)
+      - "Interne Tester"
+      - "Beta-Gruppe 1"
+    # Optional: Automatisch Tester einladen (E-Mails)
+    # tester_emails:
+    #   - "test1@example.com"
+    #   - "test2@example.com"
   
   # GitHub Releases (optional)
   github_releases:
