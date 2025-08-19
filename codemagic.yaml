@@ -17,6 +17,16 @@ workflows:
       node: latest
     
     scripts:
+      # Schritt 0: Git-Konfiguration sicherstellen
+      - name: Configure Git
+        script: |
+          git config --global init.defaultBranch main
+          git branch -M main
+          # Explizit den main Branch klonen, falls master als Standard gesetzt ist
+          if [ "$(git branch --show-current)" != "main" ]; then
+            git checkout -b main origin/main
+          fi
+      
       # Schritt 1: Flutter config-only ausführen (behebt outdated settings)
       - name: Fix Flutter Build Settings
         script: |
