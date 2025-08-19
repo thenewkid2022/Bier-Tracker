@@ -14,7 +14,6 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.thenewkid2022.bierlounge-tracker
-        development_team: 767Q6NXN2U
     scripts:
       - name: Set up code signing
         script: xcode-project use-profiles
@@ -27,11 +26,6 @@ workflows:
           rm -rf $HOME/Library/Developer/Xcode/DerivedData/*
       - name: Update Flutter iOS Config
         script: flutter build ios --config-only --release --no-codesign --verbose
-      - name: Increment Build Number
-        script: |
-          cd ios
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(($(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Runner/Info.plist) + 1))" Runner/Info.plist
-          echo "Build number incremented to: $(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Runner/Info.plist)"
       - name: Clean and Install Pods
         script: |
           cd ios
