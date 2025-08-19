@@ -6,11 +6,11 @@ workflows:
   ios-build:
     name: iOS Build for TestFlight
     max_build_duration: 120
-    instance_type: mac_pro_m1  # Schneller Mac für Builds
+    instance_type: mac_pro_m1
     environment:
       vars:
-        XCODE_VERSION: "15.4"  # Neueste Xcode-Version für iOS
-      flutter: stable  # Neueste stabile Flutter (mit Dart >=3.5 für macros)
+        XCODE_VERSION: "15.4"
+      flutter: 3.35.1  # Spezifische Version für Dart >=3.5, fix für _macros
       xcode: 15.4
       cocoapods: default
     scripts:
@@ -27,5 +27,5 @@ workflows:
       - build/ios/ipa/*.ipa
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_API_KEY  # Das setzt du in Codemagic UI unter Environment Variables (erhalte API-Key von Apple Developer)
+        api_key: $APP_STORE_CONNECT_API_KEY  # Setze in Codemagic UI (von Apple Developer)
         submit_to_testflight: true
