@@ -6,9 +6,9 @@ workflows:
     environment:
       vars:
         XCODE_VERSION: "latest"
-      flutter: stable
+      flutter: "3.32.8"
       xcode: latest
-      cocoapods: 1.16.2
+      cocoapods: 1.15.2
       groups:
         - appstore_credentials  # Erbt die App Store Connect Vars aus dem UI
       ios_signing:
@@ -24,15 +24,22 @@ workflows:
       - name: Clean Xcode DerivedData
         script: |
           rm -rf $HOME/Library/Developer/Xcode/DerivedData/*
+      - name: Debug Flutter Environment
+        script: flutter doctor --verbose && flutter --version
       - name: Update Flutter iOS Config
-        script: flutter build ios --config-only --release --no-codesign --verbose
+        script: flutter build ios --config-only --release --no-codesign --verbose || true
       - name: Clean and Install Pods
         script: |
           cd ios
           rm -rf Pods Podfile.lock
           pod install --repo-update
+          pod update --verbose
       - name: Build IPA
-        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist --verbose --no-tree-shake-icons
+      - name: Check Updated Files
+        script: |
+          ls -la ios/Runner.xcodeproj/
+          cat ios/Runner.xcodeproj/project.pbxproj | grep IPHONEOS_DEPLOYMENT_TARGET
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
