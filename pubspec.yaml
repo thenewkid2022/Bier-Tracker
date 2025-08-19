@@ -25,17 +25,17 @@ dependencies:
   url_launcher: ^6.2.5
 
   # PDF-Generierung
-  pdf: ^3.10.7
-  printing: ^5.11.1
+  pdf: ^3.11.0
+  printing: ^5.13.4
 
   # HTTP und API
   http: ^1.2.0
 
-  # Internationalisierung
-  intl: ^0.19.0
+  # Internationalisierung - Kompatibel mit flutter_localizations
+  intl: ^0.20.2
 
   # UUID-Generierung
-  uuid: ^4.3.3
+  uuid: ^4.4.0
 
   # Icons
   cupertino_icons: ^1.0.8
