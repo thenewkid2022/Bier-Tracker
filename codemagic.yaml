@@ -5,8 +5,8 @@ workflows:
     instance_type: mac_mini_m1
     environment:
       vars:
-        XCODE_VERSION: "latest"
-      flutter: "3.35.1"  # Deine lokale Version – definitiv 3.35.1
+        XCODE_VERSION: 'latest'
+      flutter: '3.35.1'  # Deine lokale Version – definitiv 3.35.1
       xcode: latest
       cocoapods: 1.16.2
       groups:
@@ -19,29 +19,33 @@ workflows:
         script: xcode-project use-profiles
       - name: Flutter Clean
         script: flutter clean --verbose
-      - name: Install Flutter dependencies  # Verschoben NACH clean, um Generated.xcconfig zu regenerieren
+      - name: Install Flutter dependencies
         script: flutter pub get --verbose
-      - name: Update Flutter iOS Config  # Früher verschoben, ohne --no-codesign
-        script: flutter build ios --config-only --release --verbose > config_log.txt
-      - name: Check Config Logs  # Neu: Debug
-        script: |
-          cd ios/Flutter
-          cat Generated.xcconfig
-          echo "Config Log:"
-          cat ../../config_log.txt
       - name: Update iOS Deployment Target
         script: |
           cd ios
           # Update Podfile platform
-          sed -i.bak "s/platform :ios, '14.0'/platform :ios, '15.0'/g" Podfile
+          sed -i.bak "s/platform :ios, '13.0'/platform :ios, '15.0'/g" Podfile
           # Update post_install in Podfile
-          sed -i.bak "s/'IPHONEOS_DEPLOYMENT_TARGET' = '14.0'/'IPHONEOS_DEPLOYMENT_TARGET' = '15.0'/g" Podfile
+          sed -i.bak "s/'IPHONEOS_DEPLOYMENT_TARGET' = '13.0'/'IPHONEOS_DEPLOYMENT_TARGET' = '15.0'/g" Podfile
           # Update project.pbxproj
           sed -i.bak 's/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' Runner.xcodeproj/project.pbxproj
           # Update Info.plist
-          sed -i.bak 's/<string>13.0<\/string>/<string>15.0<\/string>/g' Runner/Info.plist
+          sed -i.bak 's/<string>13.0<\\/string>/<string>15.0<\\/string>/g' Runner/Info.plist
           # Cleanup backups
           rm -f Podfile.bak Runner.xcodeproj/project.pbxproj.bak Runner/Info.plist.bak
+          # Update Pods repo
+          pod repo update --verbose
+      - name: Regenerate Flutter Configs After Update
+        script: flutter pub get --verbose  # Neu: Regeneriert nach Target-Update
+      - name: Update Flutter iOS Config
+        script: flutter build ios --config-only --release --verbose > config_log.txt
+      - name: Check Config Logs
+        script: |
+          cd ios/Flutter
+          cat Generated.xcconfig
+          echo 'Config Log:'
+          cat ../../config_log.txt
       - name: Clean Xcode DerivedData
         script: |
           rm -rf $HOME/Library/Developer/Xcode/DerivedData/*
@@ -59,7 +63,7 @@ workflows:
           echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"' >> Debug.xcconfig
           echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"' >> Release.xcconfig
           echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"' >> Profile.xcconfig
-      - name: Force iOS Build  # Neu: Forciert Configs vor IPA
+      - name: Force iOS Build
         script: flutter build ios --release --verbose --no-codesign
       - name: Build IPA
         script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist --verbose --no-tree-shake-icons
