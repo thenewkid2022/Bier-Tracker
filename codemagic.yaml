@@ -22,7 +22,9 @@ workflows:
       - name: Install Flutter dependencies
         script: flutter pub get --verbose
       - name: Clean and Reinstall CocoaPods
-        script: ./scripts/reset_pods.sh
+        script: |
+          chmod +x scripts/reset_pods.sh
+          ./scripts/reset_pods.sh
       - name: Regenerate Flutter Configs After Update
         script: flutter clean --verbose && flutter pub get --verbose
       - name: Debug Updated Targets
