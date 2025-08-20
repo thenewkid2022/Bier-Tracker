@@ -18,7 +18,7 @@ workflows:
     scripts:
       - name: Set up code signing
         script: |
-          app-store-connect fetch-signing-files "com.thenewkid2022.bierlounge-tracker" --type ios_app_store --certificate-type DISTRIBUTION --create
+          app-store-connect fetch-signing-files "com.thenewkid2022.bierlounge-tracker" --type IOS_APP_STORE --certificate-type DISTRIBUTION --create --p12-password "$CM_CERTIFICATE_PASSWORD"
           keychain add-certificates --certificate-password "$CM_CERTIFICATE_PASSWORD"
           xcode-project use-profiles
       - name: Flutter Clean
