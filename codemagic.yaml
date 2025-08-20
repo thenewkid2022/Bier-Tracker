@@ -21,6 +21,14 @@ workflows:
         script: flutter clean --verbose
       - name: Install Flutter dependencies  # Verschoben NACH clean, um Generated.xcconfig zu regenerieren
         script: flutter pub get --verbose
+      - name: Update Flutter iOS Config  # Früher verschoben, ohne --no-codesign
+        script: flutter build ios --config-only --release --verbose > config_log.txt
+      - name: Check Config Logs  # Neu: Debug
+        script: |
+          cd ios/Flutter
+          cat Generated.xcconfig
+          echo "Config Log:"
+          cat ../../config_log.txt
       - name: Update iOS Deployment Target
         script: |
           cd ios
@@ -51,8 +59,8 @@ workflows:
           echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"' >> Debug.xcconfig
           echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"' >> Release.xcconfig
           echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"' >> Profile.xcconfig
-      - name: Update Flutter iOS Config  # Bleibt nach Pods
-        script: flutter build ios --config-only --release --no-codesign --verbose
+      - name: Force iOS Build  # Neu: Forciert Configs vor IPA
+        script: flutter build ios --release --verbose --no-codesign
       - name: Build IPA
         script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist --verbose --no-tree-shake-icons
       - name: Check Updated Files
@@ -61,6 +69,7 @@ workflows:
           cat ios/Runner.xcodeproj/project.pbxproj | grep IPHONEOS_DEPLOYMENT_TARGET
     artifacts:
       - build/ios/ipa/*.ipa
+      - config_log.txt
     publishing:
       app_store_connect:
         api_key: $APP_STORE_CONNECT_PRIVATE_KEY
