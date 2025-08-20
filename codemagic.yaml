@@ -21,6 +21,19 @@ workflows:
         script: flutter clean --verbose
       - name: Install Flutter dependencies  # Verschoben NACH clean, um Generated.xcconfig zu regenerieren
         script: flutter pub get --verbose
+      - name: Update iOS Deployment Target
+        script: |
+          cd ios
+          # Update Podfile platform
+          sed -i.bak "s/platform :ios, '14.0'/platform :ios, '15.0'/g" Podfile
+          # Update post_install in Podfile
+          sed -i.bak "s/'IPHONEOS_DEPLOYMENT_TARGET' = '14.0'/'IPHONEOS_DEPLOYMENT_TARGET' = '15.0'/g" Podfile
+          # Update project.pbxproj
+          sed -i.bak 's/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' Runner.xcodeproj/project.pbxproj
+          # Update Info.plist
+          sed -i.bak 's/<string>13.0<\/string>/<string>15.0<\/string>/g' Runner/Info.plist
+          # Cleanup backups
+          rm -f Podfile.bak Runner.xcodeproj/project.pbxproj.bak Runner/Info.plist.bak
       - name: Clean Xcode DerivedData
         script: |
           rm -rf $HOME/Library/Developer/Xcode/DerivedData/*
