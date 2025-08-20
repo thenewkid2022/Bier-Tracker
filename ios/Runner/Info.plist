@@ -25,7 +25,7 @@
   <key>LSRequiresIPhoneOS</key>
   <true/>
   <key>MinimumOSVersion</key>
-  <string>13.0</string>
+  <string>15.0</string>
 
   <!-- Twint App-Switch Whitelist (Schemes können je nach Twint-Partner variieren) -->
   <key>LSApplicationQueriesSchemes</key>

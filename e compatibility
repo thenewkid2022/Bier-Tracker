@@ -1,0 +1,5 @@
+[33m268dbe2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix Generated.xcconfig missing after clean and deprecations for Codemagic with Flutter 3.35.1
+[33m5a71b57[m Fix outdated build settings for Codemagic - Korrigierte Script-Reihenfolge und Flutter-Version
+[33m738ff38[m Remove redundant test_api and vm_service from dev_dependencies and overrides to resolve SDK pinning conflict, ensure stable iOS build
+[33ma5ae5e9[m Update Flutter version to stable in Codemagic to resolve vm_service dependency conflict
+[33m99b6ccd[m Fix CocoaPods xcconfig include and pod deintegrate for iOS build, update dependencies for stability
