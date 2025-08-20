@@ -28,19 +28,16 @@ workflows:
           plutil -replace MinimumOSVersion -string '15.0' Runner/Info.plist
           # Update Podfile platform
           sed -i.bak "s/platform\\s*:ios\\s*,\\s*'13\\.0'/platform :ios, '15.0'/g" Podfile
-          # Add post_install block if not present
-          if ! grep -q 'post_install' Podfile; then
-            cat <<EOF >> Podfile
-
-post_install do |installer|
-  installer.pods_project.targets.each do |target|
-    flutter_additional_ios_build_settings(target)
-    target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-    end
-  end
-end
-EOF
+          # Add post_install lines if not present
+          if ! grep -q 'IPHONEOS_DEPLOYMENT_TARGET' Podfile; then
+            echo "post_install do |installer|" >> Podfile
+            echo "  installer.pods_project.targets.each do |target|" >> Podfile
+            echo "    flutter_additional_ios_build_settings(target)" >> Podfile
+            echo "    target.build_configurations.each do |config|" >> Podfile
+            echo "      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'" >> Podfile
+            echo "    end" >> Podfile
+            echo "  end" >> Podfile
+            echo "end" >> Podfile
           fi
           # Update project.pbxproj
           sed -i.bak 's/\\(IPHONEOS_DEPLOYMENT_TARGET\\s*=\\s*\\)13\\.0;/\\115.0;/g' Runner.xcodeproj/project.pbxproj
@@ -55,7 +52,7 @@ EOF
           cd ios
           cat Runner/Info.plist | grep MinimumOSVersion
           cat Podfile | grep platform
-          cat Podfile | grep post_install -A 10  # Neu: Check post_install
+          cat Podfile | grep -A 10 post_install
           cat Runner.xcodeproj/project.pbxproj | grep IPHONEOS_DEPLOYMENT_TARGET
       - name: Update Flutter iOS Config
         script: flutter build ios --config-only --release --verbose > config_log.txt
