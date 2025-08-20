@@ -6,7 +6,8 @@ workflows:
     environment:
       vars:
         XCODE_VERSION: 'latest'
-      flutter: '3.35.1'
+        CM_CERTIFICATE_PASSWORD: '$CM_CERTIFICATE_PASSWORD'  # Aus Env laden, setze in Codemagic UI
+      flutter: stable
       xcode: latest
       cocoapods: 1.16.2
       groups:
@@ -16,7 +17,10 @@ workflows:
         bundle_identifier: com.thenewkid2022.bierlounge-tracker
     scripts:
       - name: Set up code signing
-        script: xcode-project use-profiles
+        script: |
+          app-store-connect fetch-signing-files "com.thenewkid2022.bierlounge-tracker" --type ios_app_store --certificate-type DISTRIBUTION --create
+          keychain add-certificates --certificate-password "$CM_CERTIFICATE_PASSWORD"
+          xcode-project use-profiles
       - name: Flutter Clean
         script: flutter clean --verbose
       - name: Install Flutter dependencies
@@ -31,7 +35,7 @@ workflows:
         script: |
           cd ios
           cat Runner/Info.plist | grep MinimumOSVersion
-          cat Podfile  # Vollständig checken
+          cat Podfile
           cat Runner.xcodeproj/project.pbxproj | grep IPHONEOS_DEPLOYMENT_TARGET
       - name: Force iOS Build
         script: flutter build ios --release --verbose --no-codesign
