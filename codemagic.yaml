@@ -24,55 +24,32 @@ workflows:
       - name: Update iOS Deployment Target
         script: |
           cd ios
-          # Update Info.plist with plutil
+          # Podfile fixen: Uncomment und setze auf 15.0
+          sed -i.bak "s/^#\\s*platform :ios.*/platform :ios, '15.0'/" Podfile
+          if ! grep -q "platform :ios, '15.0'" Podfile; then
+            echo "platform :ios, '15.0'" | cat - Podfile > temp && mv temp Podfile
+          fi
+          # Insert Deployment Target in post_install
+          sed -i.bak "/flutter_additional_ios_build_settings(target)/a\\  target.build_configurations.each do |config|\\    config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'\\  end" Podfile
+          # Pod-Lock und Pods entfernen
+          rm -rf Podfile.lock Pods
+          # pbxproj fixen generisch
+          sed -i.bak "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9]\\+\\.[0-9]\\+/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g" Runner.xcodeproj/project.pbxproj
+          # MinimumOSVersion in Info.plist
           plutil -replace MinimumOSVersion -string '15.0' Runner/Info.plist
-          # Uncomment platform if commented
-          sed -i.bak 's/# platform :ios/platform :ios/g' Podfile
-          # Update Podfile platform generically
-          sed -i.bak "s/platform :ios, '[0-9]+\\.[0-9]+'/platform :ios, '15.0'/g" Podfile
-          # Insert deployment target setting into existing post_install block
-          sed -i.bak "/flutter_additional_ios_build_settings(target)/a\\    target.build_configurations.each do |config|\\      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'\\    end" Podfile
-          # Update project.pbxproj generically
-          sed -i.bak 's/\\(IPHONEOS_DEPLOYMENT_TARGET\\s*=\\s*\\)[0-9]+\\.[0-9]+;/\\115.0;/g' Runner.xcodeproj/project.pbxproj
-          # Cleanup backups
-          rm -f Podfile.bak Runner.xcodeproj/project.pbxproj.bak
-          # Update Pods repo
+          # Pods installieren
           pod repo update --verbose
-          # Test pod install after update
           pod install --verbose
+          # Cleanup backups
+          rm -f *.bak
       - name: Regenerate Flutter Configs After Update
         script: flutter clean --verbose && flutter pub get --verbose
       - name: Debug Updated Targets
         script: |
           cd ios
           cat Runner/Info.plist | grep MinimumOSVersion
-          cat Podfile  # Vollständig für Check
+          cat Podfile  # Vollständig checken
           cat Runner.xcodeproj/project.pbxproj | grep IPHONEOS_DEPLOYMENT_TARGET
-      - name: Update Flutter iOS Config
-        script: flutter build ios --config-only --release --verbose > config_log.txt
-      - name: Check Config Logs
-        script: |
-          cd ios/Flutter
-          cat Generated.xcconfig
-          echo 'Config Log:'
-          cat ../../config_log.txt
-      - name: Clean Xcode DerivedData
-        script: |
-          rm -rf $HOME/Library/Developer/Xcode/DerivedData/*
-      - name: Debug Flutter Environment
-        script: flutter doctor --verbose && flutter --version
-      - name: Clean and Install Pods
-        script: |
-          cd ios
-          pod deintegrate --verbose
-          rm -rf Pods Podfile.lock
-          pod install --repo-update --verbose
-      - name: Fix Pod Configurations
-        script: |
-          cd ios/Flutter
-          echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"' >> Debug.xcconfig
-          echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"' >> Release.xcconfig
-          echo '#include "Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"' >> Profile.xcconfig
       - name: Force iOS Build
         script: flutter build ios --release --verbose --no-codesign
       - name: Build IPA
