@@ -1,222 +1,317 @@
-# BierLounge Tracker 🍺
+# 🍺 Getränke Tracker - React Native + Expo
 
-Eine moderne, touch-freundliche Flutter-App für iOS-Geräte (iPhone und iPad) zur Verwaltung von Getränkekonsum, Zahlungen und Inventar in einer Community-Garage-Lounge.
+Eine moderne Getränke-Tracking-App für iOS und Android, entwickelt mit React Native und Expo.
 
 ## ✨ Features
 
-### 🏠 Kernfunktionen
-- **Benutzerverwaltung**: Einfache Registrierung und Auswahl von Benutzern
-- **Konsum-Tracking**: Große, touch-freundliche Getränke-Icons in einem adaptiven Grid
-- **Saldo-Verwaltung**: Automatische Berechnung und Anzeige des aktuellen Kontostands
-- **TWINT-Integration**: Direkte Zahlungsanfragen über die TWINT-App
-- **Offline-Funktionalität**: Lokale Datenspeicherung mit Hive
-- **Cloud-Sync**: Optionale Firebase-Integration für Datensynchronisation
+- **Getränke-Verwaltung**: Bestand und Preise verwalten
+- **Benutzer-Tracking**: Individuelle Konsum-Statistiken
+- **Echtzeit-Updates**: Sofortige Bestandsaktualisierung
+- **Responsive Design**: Optimiert für alle Bildschirmgrößen
+- **AsyncStorage-Datenbank**: Lokale Datenspeicherung für Expo Go
+- **TWINT-Integration**: Direkte Zahlungsanfragen für offene Beträge
+- **Push-Benachrichtigungen**: Wichtige Updates direkt aufs Gerät
+- **Moderne UI**: iOS-ähnliches Design mit Material Design
 
-### 🎯 Zusätzliche Features
-- **Getränkeverwaltung**: Hinzufügen/Bearbeiten von Getränken mit Preisen und Lagerbestand
-- **Inventar-Tracking**: Automatische Bestandsverwaltung mit Niedrigbestand-Warnungen
-- **Admin-Modus**: Passwortgeschützter Bereich für Verwaltungsaufgaben
-- **PDF-Reports**: Monatliche Auswertungen mit detaillierten Statistiken
-- **Benachrichtigungen**: Lokale Benachrichtigungen für wichtige Ereignisse
-
-### 🎉 Spaß-Features
-- **Achievements**: Badges und Titel basierend auf Konsum (z.B. "Beer King 👑")
-- **Leaderboard**: Monatliche Rangliste mit lustigen Titeln
-- **Zufällige Tipps**: Motivierende Nachrichten nach jedem Getränk
-
-## 🚀 Entwicklung auf Windows
+## 🚀 Schnellstart
 
 ### Voraussetzungen
-1. **Flutter SDK** installieren (https://flutter.dev/docs/get-started/install/windows)
-2. **Android Studio** oder **VS Code** mit Flutter-Plugin
-3. **Git** für Versionskontrolle
 
-### Setup
+- Node.js (Version 18 oder höher)
+- npm oder yarn
+- Expo CLI
+- iOS Simulator (für iOS-Entwicklung)
+- Android Studio (für Android-Entwicklung)
+
+### Installation
+
+1. **Repository klonen**
 ```bash
-# Repository klonen
-git clone <repository-url>
-cd bierlounge_tracker
-
-# Dependencies installieren
-flutter pub get
-
-# Flutter Doctor ausführen
-flutter doctor
-
-# App starten (Web für schnelles Testing)
-flutter run -d chrome
-
-# Oder Android Emulator
-flutter run -d android
+git clone https://github.com/yourusername/getraenke-tracker.git
+cd getraenke-tracker
 ```
 
-### Entwicklungstipps
-- **Web-Target**: Verwende `flutter run -d chrome` für schnelles Testing der UI
-- **Android-Emulator**: Für bessere Performance und native Features
-- **Hot Reload**: Funktioniert auf beiden Plattformen
-- **iOS-Simulator**: Nur auf macOS verfügbar (für finale Tests)
-
-## 🍎 iOS-Deployment
-
-### Voraussetzungen
-- **macOS** mit **Xcode** (nicht auf Windows verfügbar)
-- **CocoaPods** installiert
-- **Apple Developer Account** (für App Store)
-
-### Setup
+2. **Dependencies installieren**
 ```bash
-# iOS-spezifische Dependencies installieren
-cd ios
-pod install
-cd ..
-
-# iOS-Simulator starten
-flutter run -d ios
-
-# Release-Build erstellen
-flutter build ios --release
+npm install
+# oder
+yarn install
 ```
 
-### iOS-spezifische Konfiguration
-
-#### Info.plist für TWINT-Integration
-```xml
-<key>LSApplicationQueriesSchemes</key>
-<array>
-    <string>twint-extended</string>
-    <string>twint-issuer1</string>
-    <string>twint-issuer2</string>
-    <!-- Weitere TWINT-Schemes nach Bedarf -->
-</array>
+3. **Expo CLI installieren (falls noch nicht vorhanden)**
+```bash
+npm install -g @expo/cli
 ```
 
-#### TWINT-Entwickler-Setup
-1. **Twint Developer Portal** besuchen
-2. **Merchant-Account** erstellen
-3. **API-Credentials** erhalten
-4. **Deeplink-Spezifikation** einholen
-5. In `lib/services/payment_service.dart` echte Parameter einsetzen
+4. **App starten**
+```bash
+npm start
+# oder
+expo start
+```
+
+## 📱 Plattformen
+
+- ✅ **iOS** - Vollständig unterstützt
+- ✅ **Android** - Vollständig unterstützt
+- ✅ **Web** - Grundlegende Unterstützung
+- ✅ **Windows** - Entwicklung und Testing
 
 ## 🏗️ Projektstruktur
 
 ```
-lib/
-├── main.dart                 # App-Einstiegspunkt
-├── models/                   # Datenmodelle
-│   ├── user_profile.dart     # Benutzerprofile
-│   ├── drink.dart           # Getränke
-│   └── consumption.dart     # Konsum-Einträge
-├── screens/                  # App-Bildschirme
-│   ├── home_cupertino.dart  # Hauptbildschirm (Cupertino)
-│   ├── admin_screen.dart    # Admin-Bereich
-│   └── profile_screen.dart  # Benutzerprofile
-├── services/                 # Business Logic
-│   ├── hive_service.dart    # Lokale Datenspeicherung
-│   ├── payment_service.dart # TWINT-Integration
-│   ├── report_service.dart  # PDF-Generierung
-│   ├── notification_service.dart # Benachrichtigungen
-│   └── sync_service.dart    # Firebase-Sync
-└── widgets/                  # Wiederverwendbare UI-Komponenten
-    └── drink_icon.dart      # Getränke-Icons
+src/
+├── components/          # Wiederverwendbare UI-Komponenten
+│   └── DrinkIcon.tsx   # Getränke-Icons
+├── models/             # Datenmodelle und Interfaces
+│   ├── Drink.ts        # Getränke-Model
+│   ├── UserProfile.ts  # Benutzer-Model
+│   └── Consumption.ts  # Konsum-Model
+├── screens/            # App-Bildschirme
+│   ├── HomeScreen.tsx  # Hauptbildschirm
+│   ├── ProfileScreen.tsx # Benutzerprofil
+│   └── AdminScreen.tsx # Administrationsbereich
+├── services/           # Business Logic und APIs
+│   ├── DatabaseService.ts    # AsyncStorage-Datenbank
+│   └── NotificationService.ts # Push-Benachrichtigungen
+└── utils/              # Hilfsfunktionen
 ```
 
-## 🎨 UI/UX-Design
+## 🔧 Konfiguration
 
-### Design-Prinzipien
-- **Cupertino-Theme**: Native iOS-Feeling
-- **Touch-freundlich**: Mindestens 44pt für Buttons (iOS-Standard)
-- **Adaptive Layouts**: Optimiert für iPhone und iPad
-- **Moderne Farben**: 
-  - Primär: `CupertinoColors.activeBlue`
-  - Sekundär: `CupertinoColors.activeGreen`
-  - Hintergründe: `CupertinoColors.systemBackground`
+### App-Konfiguration
 
-### Responsive Design
-- **iPhone**: Kompakte Layouts mit 3-spaltigen Grids
-- **iPad**: Weite Layouts mit 6-spaltigen Grids und Side-by-Side-Ansichten
-- **Adaptive Navigation**: Automatische Anpassung basierend auf Bildschirmbreite
+Die App-Konfiguration erfolgt über `app.json`:
+
+```json
+{
+  "expo": {
+    "name": "Getränke Tracker",
+    "slug": "getraenke-tracker",
+    "version": "1.0.0",
+    "ios": {
+      "bundleIdentifier": "com.getraenke.tracker"
+    },
+    "android": {
+      "package": "com.getraenke.tracker"
+    }
+  }
+}
+```
+
+### EAS Build-Konfiguration
+
+Die Build-Konfiguration ist in `eas.json` definiert:
+
+```json
+{
+  "build": {
+    "production": {
+      "ios": {
+        "resourceClass": "m-medium"
+      }
+    }
+  }
+}
+```
+
+## 🚀 Deployment
+
+### iOS App Store
+
+1. **EAS Build konfigurieren**
+```bash
+eas build:configure
+```
+
+2. **iOS Build erstellen**
+```bash
+eas build --platform ios
+```
+
+3. **App Store Connect hochladen**
+```bash
+eas submit --platform ios
+```
+
+### Android Google Play Store
+
+1. **Android Build erstellen**
+```bash
+eas build --platform android
+```
+
+2. **Google Play Console hochladen**
+```bash
+eas submit --platform android
+```
+
+## 🧪 Testing
+
+### Lokales Testing
+
+```bash
+# iOS Simulator
+npm run ios
+
+# Android Emulator
+npm run android
+
+# Web Browser
+npm run web
+```
+
+### Unit Tests
+
+```bash
+npm test
+```
+
+## 📊 Datenbank
+
+Die App verwendet **AsyncStorage** für lokale Datenspeicherung in Expo Go:
+
+- **user_profiles**: Benutzerinformationen und Statistiken
+- **drinks**: Getränke-Bestand und Preise
+- **consumptions**: Konsum-Historie
+
+### Datenbank-Features
+
+- ✅ **AsyncStorage-Integration** für Expo Go Kompatibilität
+- ✅ **Automatische Demo-Daten** werden beim ersten Start geladen
+- ✅ **Referentielle Integrität** beim Löschen von Benutzern/Getränken
+- ✅ **Datenbank-Status-Monitoring** im Admin-Bereich
+- ✅ **Persistierung** - Daten bleiben nach App-Neustart erhalten
+- ✅ **In-Memory-Caching** für bessere Performance
+
+### Technische Details
+
+- **Expo Go**: Verwendet AsyncStorage für lokale Datenspeicherung
+- **Echte Builds**: Kann auf SQLite umgestellt werden
+- **Fallback-System**: Automatischer Fallback auf Mock-Daten bei Fehlern
+- **Daten-Synchronisation**: Alle Änderungen werden sofort gespeichert
+
+### Speicherort
+
+- **Expo Go**: AsyncStorage im Geräte-Speicher
+- **iOS Build**: `/var/mobile/Containers/Data/Application/[APP-ID]/Documents/getraenke.db`
+- **Android Build**: `/data/data/[PACKAGE-NAME]/databases/getraenke.db`
+
+## 💳 TWINT-Integration
+
+Die App unterstützt **TWINT-Zahlungsanfragen** für offene Beträge:
+
+### TWINT-Features
+
+- ✅ **Direkte Zahlungsanfragen** vom Admin an Benutzer
+- ✅ **Admin-Konfiguration** für private TWINT-Daten
+- ✅ **QR-Code-Generierung** für TWINT-App
+- ✅ **Betrag-Validierung** nach TWINT-Limits
+- ✅ **Nachrichten-Support** bis 140 Zeichen
+- ✅ **Automatische Betrag-Vorschläge** basierend auf offener Balance
+- ✅ **Deep-Linking** für Zahlungsrückkehr zur App
+- ✅ **Fallback-Web-Integration** wenn TWINT-App nicht verfügbar
+- ✅ **Automatische TWINT-App-Erkennung**
+
+### Admin-Konfiguration
+
+Der Admin kann seine **privaten TWINT-Daten** konfigurieren:
+
+- **IBAN** (optional) - Für direkte Überweisungen
+- **Telefonnummer** (optional) - Für TWINT-Identifikation
+- **Standard-Nachricht** - Wird allen Zahlungsanfragen vorangestellt
+- **Anzeigename** - Wird in der App als Admin angezeigt
+
+### Verwendung
+
+1. **Admin-Bereich öffnen** - TWINT-Konfiguration
+2. **Private TWINT-Daten eingeben** - IBAN, Telefonnummer, etc.
+3. **Konfiguration speichern** - Daten werden lokal gespeichert
+4. **TWINT-Button klicken** - Neben jedem Benutzer
+5. **Betrag wird vorgeschlagen** - Standardmäßig offene Balance
+6. **Nachricht kann angepasst** werden (optional)
+7. **QR-Code wird generiert** - Mit Admin-Daten
+8. **TWINT-App öffnet sich** - Direkt mit Zahlungsanfrage
+
+### Deep-Linking
+
+Die App unterstützt automatische Rückkehr nach TWINT-Zahlungen:
+
+```
+getraenke-tracker://payment-return?userId=123&amount=25.50&status=completed
+```
+
+### TWINT-Format
+
+```
+twint://pay?amount=XX.XX&message=XXX&iban=CH93 0076 2011 6238 5295 7
+```
+
+### Technische Details
+
+- **QR-Code-Generierung**: react-native-qrcode-svg
+- **TWINT-URL-Format**: Standard TWINT-Protokoll mit IBAN
+- **Admin-Konfiguration**: AsyncStorage für lokale Speicherung
+- **Deep-Linking**: Expo Linking für Zahlungsrückkehr
+- **Fallback-System**: Automatischer Wechsel zu Web-Version
+- **Betrag-Limits**: 0.01 - 999,999.99 CHF
+- **Nachrichten-Limit**: 140 Zeichen
+- **IBAN-Validierung**: Schweizer IBAN-Format
+- **Kompatibilität**: Alle TWINT-fähigen Geräte
+- **URL-Schema**: getraenke-tracker:// und twint://
+
+## 🔔 Benachrichtigungen
+
+## 🎨 UI/UX Design
+
+- **Design-System**: iOS Cupertino + Material Design
+- **Farbschema**: Moderne, barrierefreie Farben
+- **Typografie**: Klare, lesbare Schriftarten
+- **Responsive**: Optimiert für alle Bildschirmgrößen
 
 ## 🔒 Sicherheit
 
-### Admin-Zugang
-- **Passwort**: `bieradmin` (für MVP - in Produktion ändern!)
-- **Funktionen**: Getränke verwalten, Lager aufstocken, Benutzer zurücksetzen
+- Lokale Datenspeicherung
+- Keine externen API-Calls (außer Firebase)
+- Sichere Datenbank-Operationen
 
-### Datenschutz
-- **Lokale Speicherung**: Alle Daten bleiben auf dem Gerät
-- **Verschlüsselung**: Hive bietet optionale Verschlüsselung
-- **Keine sensiblen Daten**: Nur Getränke, Preise und Konsum-Historie
+## 📈 Performance
 
-## 📱 Plattform-Unterstützung
+- **Lazy Loading**: Komponenten werden bei Bedarf geladen
+- **Optimierte Datenbankabfragen**: Effiziente SQL-Statements
+- **Memory Management**: Saubere Cleanup-Funktionen
 
-### Primär
-- **iOS**: Vollständig unterstützt mit nativer Cupertino-UI
-- **iPhone**: Optimiert für alle Bildschirmgrößen
-- **iPad**: Adaptive Layouts mit erweiterten Funktionen
+## 🐛 Bekannte Probleme
 
-### Entwicklung
-- **Windows**: Vollständige Entwicklung möglich
-- **Android**: Funktioniert, aber nicht optimiert
-- **Web**: Für UI-Testing und Entwicklung
-
-## 🚧 Bekannte Einschränkungen
-
-### Windows-Entwicklung
-- **iOS-Simulator**: Nicht verfügbar (nur auf macOS)
-- **iOS-Builds**: Erfordern macOS + Xcode
-- **TWINT-Testing**: App-Switching nur auf echten iOS-Geräten testbar
-
-### TWINT-Integration
-- **Entwickler-Account**: Erfordert Merchant-Vertrag bei Twint
-- **API-Credentials**: Müssen über Twint Developer Portal bezogen werden
-- **Deeplink-Spezifikation**: Kann sich je nach Händler unterscheiden
-
-## 🔧 Troubleshooting
-
-### Häufige Probleme
-
-#### Flutter Doctor Fehler
-```bash
-flutter doctor --android-licenses
-flutter clean
-flutter pub get
-```
-
-#### iOS Build-Fehler
-```bash
-cd ios
-pod deintegrate
-pod install
-cd ..
-flutter clean
-flutter pub get
-```
-
-#### Hive-Datenbank-Probleme
-```bash
-# App-Daten zurücksetzen (nur für Entwicklung!)
-flutter clean
-flutter pub get
-```
-
-## 📚 Weitere Ressourcen
-
-- [Flutter Documentation](https://flutter.dev/docs)
-- [Cupertino Widgets](https://api.flutter.dev/flutter/cupertino/cupertino-library.html)
-- [Hive Database](https://docs.hivedb.dev/)
-- [TWINT Developer Portal](https://www.twint.ch/entwickler/)
+- iOS Simulator: Gelegentliche Performance-Probleme
+- Android: Bestimmte Geräte-spezifische Anpassungen erforderlich
 
 ## 🤝 Beitragen
 
-1. Fork das Repository
-2. Erstelle einen Feature-Branch
-3. Committe deine Änderungen
-4. Erstelle einen Pull Request
+1. Fork des Repositories
+2. Feature-Branch erstellen (`git checkout -b feature/AmazingFeature`)
+3. Änderungen committen (`git commit -m 'Add some AmazingFeature'`)
+4. Branch pushen (`git push origin feature/AmazingFeature`)
+5. Pull Request erstellen
 
 ## 📄 Lizenz
 
-Dieses Projekt ist für den internen Gebrauch in der BierLounge bestimmt.
+Dieses Projekt steht unter der MIT-Lizenz. Siehe `LICENSE` für weitere Details.
+
+## 📞 Support
+
+Bei Fragen oder Problemen:
+
+- **Issues**: GitHub Issues verwenden
+- **Discussions**: GitHub Discussions für allgemeine Fragen
+- **Wiki**: Projekt-Wiki für detaillierte Dokumentation
+
+## 🙏 Danksagungen
+
+- **Expo Team** für das großartige Framework
+- **React Native Community** für die Unterstützung
+- **Alle Mitwirkenden** an diesem Projekt
 
 ---
 
-**Entwickelt mit ❤️ für die BierLounge Community**
+**Entwickelt mit ❤️ für die Getränke Community**

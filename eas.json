@@ -1,0 +1,50 @@
+{
+  "cli": {
+    "version": ">= 12.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false,
+        "buildConfiguration": "Release"
+      }
+    },
+    "testflight": {
+      "distribution": "store",
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release"
+      }
+    },
+    "production": {
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release"
+      }
+    }
+  },
+  "submit": {
+    "testflight": {
+      "ios": {
+        "appleId": "IHRE_APPLE_ID@example.com",
+        "ascAppId": "IHRE_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "IHR_TEAM_ID"
+      }
+    },
+    "production": {
+      "ios": {
+        "appleId": "IHRE_APPLE_ID@example.com",
+        "ascAppId": "IHRE_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "IHR_TEAM_ID"
+      }
+    }
+  }
+}

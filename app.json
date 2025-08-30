@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Getränke Tracker",
+    "slug": "getraenke-tracker",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thenewkid2022.bierlounge-tracker",
+      "buildNumber": "2",
+      "infoPlist": {
+        "NSUserNotificationUsageDescription": "Diese App verwendet Benachrichtigungen, um Sie über Ihre Getränke-Einkäufe zu informieren.",
+        "NSCameraUsageDescription": "Diese App benötigt Zugriff auf die Kamera für QR-Code-Scans.",
+        "NSPhotoLibraryUsageDescription": "Diese App benötigt Zugriff auf die Fotobibliothek für QR-Code-Bilder.",
+        "CFBundleDisplayName": "Getränke Tracker",
+        "CFBundleName": "Getränke Tracker",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLName": "Getränke Tracker Payment Return",
+            "CFBundleURLSchemes": [
+              "bierlounge-tracker"
+            ]
+          },
+          {
+            "CFBundleURLName": "TWINT Payment",
+            "CFBundleURLSchemes": [
+              "twint"
+            ]
+          }
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "scheme": "bierlounge-tracker",
+    "plugins": [],
+    "extra": {
+      "eas": {
+        "projectId": "4c2cd3f1-77ff-4932-8bbe-6d0d0e5d3435"
+      }
+    },
+    "platforms": [
+      "ios"
+    ],
+    "owner": "ragnarus"
+  }
+}

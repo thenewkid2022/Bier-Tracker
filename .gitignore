@@ -1,45 +1,103 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+# OSX
+#
 .DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
 
-# IntelliJ related
+# Xcode
+#
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace
+
+# Android/IntelliJ
+#
+build/
+.idea
+.gradle
+local.properties
 *.iml
-*.ipr
-*.iws
-.idea/
+*.hprof
+.cxx/
+*.keystore
+!debug.keystore
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# node.js
+#
+node_modules/
+npm-debug.log
+yarn-error.log
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
+# BUCK
+buck-out/
+\.buckd/
+*.keystore
+!debug.keystore
 
-# Symbolication related
-app.*.symbols
+# fastlane
+#
+# It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
+# screenshots whenever they are needed, or store them in a separate git repo.
+#
+# The deliver action stores the screenshots in a temporary directory, so you can run `fastlane deliver` without
+# building the app each time. See the `fastlane` README for more details.
+#
+# fastlane/screenshots
+# fastlane/videos
+# fastlane/Preview.html
 
-# Obfuscation related
-app.*.map.json
+# Bundle artifacts
+*.jsbundle
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# CocoaPods
+/ios/Pods/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# EAS
+.easignore
+
+# Temporary files
+*.tmp
+*.temp

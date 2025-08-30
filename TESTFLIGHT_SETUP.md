@@ -1,97 +1,149 @@
-# 🚀 TestFlight Setup für BierLounge Tracker
+# 🚀 TestFlight Setup Anleitung
 
-## 📱 iOS Device Testing über TestFlight
+Diese Anleitung führt Sie durch den kompletten Prozess der TestFlight-Bereitstellung Ihrer Getränke Tracker App.
 
-### Voraussetzungen
-- Apple Developer Account
-- iOS Device mit iOS 13.0 oder höher
-- TestFlight App installiert
-- Device UDID in Apple Developer Portal registriert
+## 📋 Voraussetzungen
 
-### 1. Device UDID registrieren
-1. **Gehe zu [developer.apple.com](https://developer.apple.com)**
-2. **Certificates, Identifiers & Profiles > Devices**
-3. **+ (neues Device hinzufügen)**
-4. **Device Name**: Dein Device-Name
-5. **Device ID**: Deine Device UDID
-6. **Device Type**: iPhone oder iPad
+- ✅ Apple Developer Account (bereits vorhanden)
+- ✅ Expo Account
+- ✅ EAS CLI installiert
+- ✅ Xcode (für lokale Tests)
 
-### 2. UDID finden
-**Option A: Über iTunes/Finder**
-- Verbinde Device mit Computer
-- Öffne iTunes/Finder
-- Klicke auf Device
-- Seriennummer = UDID
+## 🔧 Schritt 1: EAS CLI Installation
 
-**Option B: Über Device**
-- Einstellungen > Allgemein > Info
-- Seriennummer = UDID
+```bash
+npm install -g @expo/cli
+npm install -g eas-cli
+```
 
-### 3. Provisioning Profile aktualisieren
-1. **Profiles > +**
-2. **iOS App Development**
-3. **App ID**: `com.thenewkid2022.bierlounge-tracker`
-4. **Zertifikate**: Wähle dein Development-Zertifikat
-5. **Devices**: Wähle dein registriertes Device
-6. **Profil herunterladen und installieren**
+## 🔑 Schritt 2: EAS Login
 
-### 4. TestFlight Build
-Nach erfolgreichem Codemagic Build:
-1. **App wird automatisch zu TestFlight hochgeladen**
-2. **Gehe zu [App Store Connect](https://appstoreconnect.apple.com)**
-3. **My Apps > BierLounge Tracker > TestFlight**
-4. **Build genehmigen** (falls erforderlich)
-5. **Externe Tester hinzufügen** (deine E-Mail)
+```bash
+eas login
+```
 
-### 5. TestFlight App installieren
-1. **TestFlight App öffnen**
-2. **Einladung akzeptieren**
-3. **BierLounge Tracker installieren**
-4. **App testen**
+## 🆔 Schritt 3: EAS Project ID abrufen
 
-### 6. Feedback geben
-- **TestFlight App > BierLounge Tracker > Feedback**
-- **Screenshots, Videos, Beschreibungen**
-- **Crash-Reports automatisch gesammelt**
+```bash
+eas init
+```
 
-## 🔧 Codemagic Konfiguration
+**Wichtig:** Die generierte Project ID in `app.json` unter `extra.eas.projectId` eintragen.
 
-### Automatischer TestFlight-Upload
-- **`submit_to_testflight: true`** aktiviert
-- **Nur bei Release-Workflows** (release/* branches, tags)
-- **Automatische IPA-Erstellung** und Upload
+## 🏗️ Schritt 4: Build für TestFlight erstellen
 
-### Code-Signing
-- **Distribution Type**: `app_store`
-- **Bundle Identifier**: `com.thenewkid2022.bierlounge-tracker`
-- **Provisioning Profile**: App Store Distribution
+```bash
+eas build --platform ios --profile testflight
+```
 
-## 📋 Checkliste
+## 📱 Schritt 5: App Store Connect vorbereiten
 
-- [ ] Device UDID in Apple Developer Portal registriert
-- [ ] Provisioning Profile aktualisiert
-- [ ] Codemagic Build erfolgreich
-- [ ] App in TestFlight verfügbar
-- [ ] TestFlight App installiert
-- [ ] App funktioniert auf Device
+1. **App Store Connect öffnen:** https://appstoreconnect.apple.com
+2. **Neue App erstellen** (falls noch nicht geschehen)
+3. **Bundle ID:** `com.thenewkid2022.bierlounge-tracker`
+4. **App-Informationen ausfüllen:**
+   - App Name: "Getränke Tracker"
+   - Primäre Sprache: Deutsch
+   - Bundle ID: `com.thenewkid2022.bierlounge-tracker`
+   - SKU: `GT-001` ✅ (bereits konfiguriert)
+   - Apple ID: `6751214675` ✅ (bereits konfiguriert)
 
-## 🆘 Häufige Probleme
+## ⚙️ Schritt 6: EAS Submit konfigurieren
 
-**Device nicht erkannt**
-- UDID korrekt registriert?
-- Provisioning Profile aktualisiert?
-- Device neu gestartet?
+Die `eas.json` Datei ist bereits vollständig mit Ihren Daten konfiguriert:
 
-**App installiert sich nicht**
-- iOS-Version kompatibel (≥13.0)?
-- Genügend Speicherplatz?
-- Internetverbindung aktiv?
+```json
+{
+  "submit": {
+    "testflight": {
+      "ios": {
+        "appleId": "chrigel84-gmail.com",    // ✅ Vollständig konfiguriert
+        "ascAppId": "6751214675",            // ✅ Vollständig konfiguriert
+        "appleTeamId": "767Q6NXN2U"         // ✅ Vollständig konfiguriert
+      }
+    }
+  }
+}
+```
 
-**TestFlight Build nicht verfügbar**
-- Build erfolgreich abgeschlossen?
-- App Store Connect Build genehmigt?
-- Externe Tester hinzugefügt?
+**Alle Daten sind vollständig konfiguriert:**
+- **appleId:** `chrigel84-gmail.com` ✅
+- **ascAppId:** `6751214675` ✅
+- **appleTeamId:** `767Q6NXN2U` ✅
+- **Bundle ID:** `com.thenewkid2022.bierlounge-tracker` ✅
+- **SKU:** `GT-001` ✅
+
+**🎉 Sie können jetzt direkt mit dem Build beginnen!**
+
+## 🚀 Schritt 7: App für TestFlight einreichen
+
+```bash
+eas submit --platform ios --profile testflight
+```
+
+## 📋 Schritt 8: TestFlight-Review
+
+1. **App Store Connect → TestFlight**
+2. **Build auswählen**
+3. **Test-Informationen ausfüllen:**
+   - Was zu testen ist
+   - Test-Anweisungen
+   - Feedback-E-Mail
+
+## 🔄 Schritt 9: Externe Tester einladen
+
+1. **TestFlight → Externe Tester**
+2. **Tester hinzufügen** (E-Mail-Adressen)
+3. **Test-Gruppe erstellen**
+4. **Build der Test-Gruppe zuweisen**
+
+## ⚠️ Wichtige Hinweise
+
+### Bundle Version aktualisieren
+Bei jedem neuen Build die `buildNumber` in `app.json` erhöhen:
+
+```json
+"ios": {
+  "buildNumber": "2"  // Von "1" auf "2" erhöhen
+}
+```
+
+### App-Version aktualisieren
+Bei größeren Änderungen die `version` in `app.json` erhöhen:
+
+```json
+"version": "1.1.0"  // Von "1.0.0" auf "1.1.0"
+```
+
+## 🐛 Häufige Probleme
+
+### Build schlägt fehl
+```bash
+# Logs anzeigen
+eas build:list
+eas build:view [BUILD_ID]
+```
+
+### Submit schlägt fehl
+```bash
+# Status prüfen
+eas submit:list
+```
+
+## 📞 Support
+
+Bei Problemen:
+1. EAS Build Logs prüfen
+2. App Store Connect Status prüfen
+3. Apple Developer Portal prüfen
+
+## 🎯 Nächste Schritte nach TestFlight
+
+1. **Feedback sammeln** von Test-Nutzern
+2. **Bugs beheben** basierend auf Feedback
+3. **App Store Release** vorbereiten
+4. **Marketing-Material** erstellen
 
 ---
 
-**Viel Erfolg beim Testen! 🍺📱**
+**Viel Erfolg bei Ihrer TestFlight-Bereitstellung! 🍺**

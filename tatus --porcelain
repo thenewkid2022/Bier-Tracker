@@ -1,5 +1,0 @@
-[33mc9bee71[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix iOS Build: Update CocoaPods to 1.16.2, add Pod configuration fixes, improve verbose logging
-[33m6871c6a[m iOS Build Debugging: Flutter 3.32.8, erweiterte Debug-Schritte, Pod-Update und Build-Optimierungen
-[33m8004db1[m YAML-Validierungsfehler behoben: development_team entfernt und Build-Number-Inkrement vereinfacht
-[33m63897ed[m Development Team hinzugefügt und Flutter iOS Files Clean entfernt: Fix für 'outdated build settings' Fehler
-[33m5d13b2d[m --no-codesign Option hinzugefügt: Umgeht Signierungsprüfung beim Config-Generierungsschritt
