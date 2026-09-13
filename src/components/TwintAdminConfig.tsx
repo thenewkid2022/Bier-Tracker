@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Modal, ScrollView } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TwintService } from '../services/TwintService';
-import { getPlatformStyle, isAndroid } from '../utils/platformStyles';
+import { Button, IconButton, TextField } from './ui';
+import { colors, radius, spacing, typography } from '../theme';
 
 interface TwintAdminConfigProps {
   isVisible: boolean;
@@ -10,7 +12,10 @@ interface TwintAdminConfigProps {
   onConfigSaved: () => void;
 }
 
+const MESSAGE_MAX = 140;
+
 export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({ isVisible, onClose, onConfigSaved }) => {
+  const insets = useSafeAreaInsets();
   const [iban, setIban] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [defaultMessage, setDefaultMessage] = useState('');
@@ -41,26 +46,22 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({ isVisible, o
     try {
       setIsLoading(true);
 
-      // Validierung
       if (iban && !twintService.validateIBAN(iban)) {
-        Alert.alert('Fehler', 'Bitte geben Sie eine gültige Schweizer IBAN ein (z.B. CH93 0076 2011 6238 5295 7)');
+        Alert.alert('Ungültige IBAN', 'Bitte gib eine gültige Schweizer IBAN ein (z. B. CH93 0076 2011 6238 5295 7).');
         return;
       }
-
       if (phoneNumber && !twintService.validatePhoneNumber(phoneNumber)) {
         Alert.alert(
-          'Fehler',
-          'Bitte geben Sie eine gültige Schweizer Telefonnummer ein (z.B. +41 79 123 45 67 oder 079 123 45 67)'
+          'Ungültige Telefonnummer',
+          'Bitte gib eine Schweizer Nummer ein (z. B. +41 79 123 45 67 oder 079 123 45 67).'
         );
         return;
       }
-
       if (defaultMessage && !twintService.validateMessage(defaultMessage)) {
-        Alert.alert('Fehler', 'Die Standard-Nachricht ist zu lang (max. 140 Zeichen)');
+        Alert.alert('Nachricht zu lang', `Maximal ${MESSAGE_MAX} Zeichen.`);
         return;
       }
 
-      // Konfiguration speichern
       await twintService.saveAdminConfig({
         iban: iban.trim() || undefined,
         phoneNumber: phoneNumber.trim() || undefined,
@@ -68,15 +69,8 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({ isVisible, o
         merchantName: merchantName.trim() || undefined,
       });
 
-      Alert.alert('Erfolg', 'TWINT-Admin-Konfiguration wurde gespeichert.', [
-        {
-          text: 'OK',
-          onPress: () => {
-            onConfigSaved();
-            onClose();
-          },
-        },
-      ]);
+      onConfigSaved();
+      onClose();
     } catch (error) {
       console.error('Fehler beim Speichern der Konfiguration:', error);
       Alert.alert('Fehler', 'Konfiguration konnte nicht gespeichert werden.');
@@ -86,10 +80,10 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({ isVisible, o
   };
 
   const handleReset = () => {
-    Alert.alert('Konfiguration zurücksetzen', 'Möchten Sie wirklich alle TWINT-Einstellungen zurücksetzen?', [
+    Alert.alert('Felder leeren', 'Alle TWINT-Einstellungen in diesem Formular zurücksetzen?', [
       { text: 'Abbrechen', style: 'cancel' },
       {
-        text: 'Zurücksetzen',
+        text: 'Leeren',
         style: 'destructive',
         onPress: () => {
           setIban('');
@@ -102,126 +96,110 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({ isVisible, o
   };
 
   const formatIBAN = (text: string) => {
-    // IBAN formatieren: CH93 0076 2011 6238 5295 7
     const cleaned = text.replace(/\s/g, '').toUpperCase();
     if (cleaned.startsWith('CH')) {
-      const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
-      return formatted;
+      return cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
     }
     return text;
   };
 
   const formatPhoneNumber = (text: string) => {
-    // Telefonnummer formatieren: +41 79 123 45 67
     const cleaned = text.replace(/\s/g, '');
     if (cleaned.startsWith('+41')) {
-      const formatted = cleaned.replace(/(\+41)(\d{2})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
-      return formatted;
-    } else if (cleaned.startsWith('0')) {
-      const formatted = cleaned.replace(/(0\d{2})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4');
-      return formatted;
+      return cleaned.replace(/(\+41)(\d{2})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
+    }
+    if (cleaned.startsWith('0')) {
+      return cleaned.replace(/(0\d{2})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4');
     }
     return text;
   };
 
   return (
-    <Modal visible={isVisible} animationType="slide" transparent={true} onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>TWINT-Admin-Konfiguration</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <MaterialIcons name="close" size={24} color="#000000" />
-            </TouchableOpacity>
+    <Modal visible={isVisible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.backdrop}>
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
+          <View style={styles.header}>
+            <View style={styles.headerIcon}>
+              <MaterialIcons name="settings" size={22} color={colors.textOnPrimary} />
+            </View>
+            <View style={styles.headerTexts}>
+              <Text style={styles.title}>TWINT-Konfiguration</Text>
+              <Text style={styles.subtitle}>Wird nur lokal auf diesem Gerät gespeichert</Text>
+            </View>
+            <IconButton icon="close" accessibilityLabel="Schließen" onPress={onClose} />
           </View>
 
           <ScrollView
-            style={styles.scrollContent}
-            showsVerticalScrollIndicator={true}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            style={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
           >
-            <Text style={styles.sectionTitle}>Persönliche TWINT-Daten</Text>
-            <Text style={styles.sectionDescription}>
-              Konfigurieren Sie Ihre privaten TWINT-Daten für Zahlungsanfragen.
-            </Text>
+            <TextField
+              label="Anzeigename"
+              value={merchantName}
+              onChangeText={setMerchantName}
+              placeholder="z. B. Vereinskasse"
+              maxLength={50}
+              hint="Erscheint als Empfänger in der Zahlungsanfrage."
+            />
+            <TextField
+              label="IBAN (optional)"
+              value={iban}
+              onChangeText={(text) => setIban(formatIBAN(text))}
+              placeholder="CH93 0076 2011 6238 5295 7"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={27}
+              hint="Wird automatisch formatiert."
+            />
+            <TextField
+              label="Telefonnummer (optional)"
+              value={phoneNumber}
+              onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
+              placeholder="+41 79 123 45 67"
+              keyboardType="phone-pad"
+              maxLength={16}
+              hint="Für die TWINT-Identifikation."
+            />
+            <TextField
+              label="Standard-Nachricht"
+              value={defaultMessage}
+              onChangeText={setDefaultMessage}
+              placeholder="Getränke Tracker"
+              maxLength={MESSAGE_MAX}
+              hint="Wird jeder Zahlungsanfrage vorangestellt."
+              trailingHint={`${defaultMessage.length}/${MESSAGE_MAX}`}
+            />
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>IBAN (optional)</Text>
-              <TextInput
-                style={styles.input}
-                value={iban}
-                onChangeText={(text) => setIban(formatIBAN(text))}
-                placeholder="CH93 0076 2011 6238 5295 7"
-                autoCapitalize="characters"
-                maxLength={27}
-              />
-              <Text style={styles.inputHint}>Für direkte Überweisungen. Wird automatisch formatiert.</Text>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Telefonnummer (optional)</Text>
-              <TextInput
-                style={styles.input}
-                value={phoneNumber}
-                onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
-                placeholder="+41 79 123 45 67"
-                keyboardType="phone-pad"
-                maxLength={16}
-              />
-              <Text style={styles.inputHint}>Für TWINT-Identifikation. Wird automatisch formatiert.</Text>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Standard-Nachricht</Text>
-              <TextInput
-                style={styles.input}
-                value={defaultMessage}
-                onChangeText={setDefaultMessage}
-                placeholder="Getränke Tracker"
-                maxLength={140}
-              />
-              <Text style={styles.inputHint}>Wird allen Zahlungsanfragen vorangestellt. Max. 140 Zeichen.</Text>
-              <Text style={styles.characterCount}>{defaultMessage.length}/140 Zeichen</Text>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Anzeigename</Text>
-              <TextInput
-                style={styles.input}
-                value={merchantName}
-                onChangeText={setMerchantName}
-                placeholder="Ihr Name"
-                maxLength={50}
-              />
-              <Text style={styles.inputHint}>Wird in der App als Admin angezeigt.</Text>
-            </View>
-
-            <View style={styles.infoContainer}>
-              <MaterialIcons name="info" size={20} color="#007AFF" />
+            <View style={styles.infoBox}>
+              <MaterialIcons name="lock-outline" size={18} color={colors.primary} />
               <Text style={styles.infoText}>
-                Diese Daten werden nur lokal auf Ihrem Gerät gespeichert und für TWINT-Zahlungsanfragen verwendet.
+                Die IBAN liegt verschlüsselt im Keychain, die übrigen Angaben im lokalen Speicher. Es werden keine Daten
+                an Server übertragen.
               </Text>
             </View>
+
+            <Button
+              label="Felder leeren"
+              variant="ghost"
+              icon="backspace"
+              size="sm"
+              onPress={handleReset}
+              style={styles.resetButton}
+            />
           </ScrollView>
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-              <MaterialIcons name="refresh" size={20} color="#FF3B30" />
-              <Text style={styles.resetButtonText}>Zurücksetzen</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.cancelButtonText}>Abbrechen</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+          <View style={styles.actions}>
+            <Button label="Abbrechen" variant="secondary" onPress={onClose} style={styles.actionSecondary} />
+            <Button
+              label="Speichern"
+              icon="check"
+              size="lg"
               onPress={handleSave}
-              disabled={isLoading}
-            >
-              <MaterialIcons name="save" size={20} color="#FFFFFF" />
-              <Text style={styles.saveButtonText}>{isLoading ? 'Speichern...' : 'Speichern'}</Text>
-            </TouchableOpacity>
+              loading={isLoading}
+              style={styles.actionPrimary}
+            />
           </View>
         </View>
       </View>
@@ -230,168 +208,83 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({ isVisible, o
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+    backgroundColor: colors.overlay,
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    zIndex: 1000,
   },
-  modalContent: {
-    ...getPlatformStyle('modal'),
-    backgroundColor: '#FFFFFF',
-    borderRadius: isAndroid ? 8 : 16,
-    padding: 20,
-    width: '90%',
-    maxWidth: 500,
-    height: '90%',
-    zIndex: 1001,
-    shadowColor: isAndroid ? undefined : '#000',
-    shadowOffset: isAndroid
-      ? undefined
-      : {
-          width: 0,
-          height: 10,
-        },
-    shadowOpacity: isAndroid ? undefined : 0.25,
-    shadowRadius: isAndroid ? undefined : 10,
-    elevation: isAndroid ? 24 : 5,
+  sheet: {
+    width: '100%',
+    maxWidth: 560,
+    maxHeight: '92%',
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
   },
-  modalHeader: {
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000000',
+  headerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  closeButton: {
-    padding: 4,
+  headerTexts: {
+    flex: 1,
+    minWidth: 0,
+  },
+  title: {
+    ...typography.heading,
+    fontSize: 18,
+    lineHeight: 24,
+    color: colors.textPrimary,
+  },
+  subtitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  scroll: {
+    flexGrow: 0,
   },
   scrollContent: {
-    flex: 1,
-    paddingBottom: 20,
+    paddingBottom: spacing.sm,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 8,
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000000',
-    marginBottom: 8,
-  },
-  input: {
-    ...getPlatformStyle('card'),
-    backgroundColor: '#F8F9FA',
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-    borderRadius: isAndroid ? 4 : 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: isAndroid ? 48 : undefined,
-  },
-  inputHint: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 4,
-    lineHeight: 16,
-  },
-  characterCount: {
-    fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'right',
-    marginTop: 4,
-  },
-  infoContainer: {
+  infoBox: {
     flexDirection: 'row',
-    backgroundColor: '#F0F8FF',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
     alignItems: 'flex-start',
+    gap: spacing.sm + 2,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.sm,
+    padding: spacing.md,
   },
   infoText: {
-    fontSize: 12,
-    color: '#007AFF',
-    marginLeft: 8,
+    ...typography.caption,
+    color: colors.primaryDark,
     flex: 1,
-    lineHeight: 16,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 20,
-    paddingHorizontal: 0,
   },
   resetButton: {
-    ...getPlatformStyle('button'),
+    alignSelf: 'flex-start',
+    marginTop: spacing.md,
+  },
+  actions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFE5E5',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: isAndroid ? 4 : 6,
-    gap: 4,
-    minHeight: isAndroid ? 48 : 36,
-    justifyContent: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  actionSecondary: {
     flex: 1,
+    minHeight: 52,
   },
-  resetButtonText: {
-    color: '#FF3B30',
-    fontWeight: '600',
-    fontSize: isAndroid ? 14 : 11,
-  },
-  cancelButton: {
-    ...getPlatformStyle('button'),
-    backgroundColor: '#8E8E93',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: isAndroid ? 4 : 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: isAndroid ? 48 : 36,
-    flex: 1,
-  },
-  cancelButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: isAndroid ? 14 : 11,
-  },
-  saveButton: {
-    ...getPlatformStyle('button'),
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#00D4AA',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: isAndroid ? 4 : 6,
-    justifyContent: 'center',
-    gap: 4,
-    minHeight: isAndroid ? 48 : 36,
-    flex: 1,
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: isAndroid ? 14 : 11,
+  actionPrimary: {
+    flex: 2,
   },
 });

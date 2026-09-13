@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing } from '../../theme';
+import { Badge, StatTile } from '../../components/ui';
+import { colors, spacing, typography } from '../../theme';
 import type { DbStatus } from '../../state/appStore';
 
 type Props = {
@@ -9,77 +10,44 @@ type Props = {
   drinkCount: number;
 };
 
-export const DatabaseStatusCard: React.FC<Props> = ({ dbStatus, userCount, drinkCount }) => (
-  <>
-    {dbStatus && (
-      <View style={styles.dbStatusContainer}>
-        <Text style={styles.dbStatusTitle}>Datenbank-Status</Text>
-        <View style={styles.dbStatusInfo}>
-          <Text style={styles.dbStatusText}>Status: {dbStatus.isInitialized ? '✅ Aktiv' : '❌ Fehler'}</Text>
-          <Text style={styles.dbStatusText}>
-            Benutzer: {dbStatus.tableCounts.users ?? 0} | Getränke: {dbStatus.tableCounts.drinks ?? 0} | Konsum:{' '}
-            {dbStatus.tableCounts.consumptions ?? 0}
-          </Text>
-        </View>
-      </View>
-    )}
+export const DatabaseStatusCard: React.FC<Props> = ({ dbStatus, userCount, drinkCount }) => {
+  const consumptionCount = dbStatus?.tableCounts.consumptions ?? 0;
+  const ok = dbStatus?.isInitialized ?? false;
 
-    <View style={styles.overviewContainer}>
-      <View style={styles.overviewItem}>
-        <Text style={styles.overviewValue}>{userCount}</Text>
-        <Text style={styles.overviewLabel}>Benutzer</Text>
+  return (
+    <View style={styles.wrap}>
+      <View style={styles.row}>
+        <StatTile icon="group" label="Benutzer" value={String(userCount)} tone="primary" />
+        <StatTile icon="sports-bar" label="Getränke" value={String(drinkCount)} tone="accent" />
+        <StatTile icon="receipt-long" label="Buchungen" value={String(consumptionCount)} />
       </View>
-      <View style={styles.overviewItem}>
-        <Text style={styles.overviewValue}>{drinkCount}</Text>
-        <Text style={styles.overviewLabel}>Getränke</Text>
-      </View>
+      {dbStatus && (
+        <View style={styles.statusRow}>
+          <Text style={styles.statusText}>Lokale Datenbank</Text>
+          <Badge label={ok ? 'Aktiv' : 'Fehler'} tone={ok ? 'success' : 'danger'} />
+        </View>
+      )}
     </View>
-  </>
-);
+  );
+};
 
 const styles = StyleSheet.create({
-  dbStatusContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    alignItems: 'center',
+  wrap: {
+    marginBottom: spacing.xl,
   },
-  dbStatusTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
-  },
-  dbStatusInfo: {
-    alignItems: 'center',
-  },
-  dbStatusText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  overviewContainer: {
+  row: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    gap: spacing.lg,
+    gap: spacing.md,
   },
-  overviewItem: {
-    flex: 1,
+  statusRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.xs,
   },
-  overviewValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: spacing.xs,
-  },
-  overviewLabel: {
-    fontSize: 12,
+  statusText: {
+    ...typography.caption,
     color: colors.textSecondary,
-    textAlign: 'center',
   },
 });

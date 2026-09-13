@@ -1,24 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   Alert,
-  useWindowDimensions,
   Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
+  View,
+  useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useShallow } from 'zustand/react/shallow';
 import { DrinkIcon } from '../components/DrinkIcon';
+import { Badge, Button, Card, EmptyState, IconButton, Screen, SectionHeader, UserChip, Avatar } from '../components/ui';
 import { useAppStore } from '../state/appStore';
-import { getPlatformStyle, isAndroid } from '../utils/platformStyles';
+import {
+  MAX_CONTENT_WIDTH,
+  colors,
+  formatChf,
+  gridColumnsForWidth,
+  radius,
+  shadow,
+  spacing,
+  typography,
+} from '../theme';
 import type { Drink } from '../domain/schemas';
 
-/** Ab dieser Breite (iPad, Landscape, Split View) wird das zweispaltige Layout genutzt. */
-const WIDE_LAYOUT_BREAKPOINT = 900;
+const MAX_QUANTITY = 10;
+const LOW_STOCK = 5;
+const GRID_GAP = spacing.md;
 
 export const HomeScreen: React.FC = () => {
   const { users, drinks, selectedUserId, hydrate, selectUser, purchaseDrink, isHydrating } = useAppStore(
@@ -33,533 +45,501 @@ export const HomeScreen: React.FC = () => {
     }))
   );
   const selectedUser = selectedUserId ? (users.find((u) => u.id === selectedUserId) ?? null) : null;
+
   const { width } = useWindowDimensions();
-  const isWide = width >= WIDE_LAYOUT_BREAKPOINT;
-  const [quantityModalVisible, setQuantityModalVisible] = useState(false);
+  const columns = gridColumnsForWidth(width);
+  // Verfügbare Breite = Fenster minus Screen-Padding, begrenzt auf die Maximalbreite.
+  const horizontalPadding = width >= 600 ? spacing.xxl : spacing.lg;
+  const contentWidth = Math.min(width - horizontalPadding * 2, MAX_CONTENT_WIDTH);
+  const cardWidth = Math.floor((contentWidth - GRID_GAP * (columns - 1)) / columns);
+
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
-  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(1);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   useEffect(() => {
     hydrate().catch((error) => console.error('Fehler beim Hydraten der Daten:', error));
   }, [hydrate]);
 
-  const refreshData = async () => {
-    await hydrate();
-  };
+  const maxQuantity = useMemo(
+    () => (selectedDrink ? Math.max(1, Math.min(selectedDrink.stock, MAX_QUANTITY)) : 1),
+    [selectedDrink]
+  );
 
-  const handleDrinkPurchase = async (drink: Drink) => {
+  const openQuantitySheet = (drink: Drink) => {
     if (!selectedUser) {
-      Alert.alert('Fehler', 'Bitte wählen Sie zuerst einen Benutzer aus.');
+      Alert.alert('Kein Benutzer gewählt', 'Bitte wähle zuerst oben einen Benutzer aus.');
       return;
     }
-
     if (drink.stock <= 0) {
       Alert.alert('Ausverkauft', 'Dieses Getränk ist leider nicht mehr verfügbar.');
       return;
     }
-
-    // Modal für Mengenauswahl öffnen
     setSelectedDrink(drink);
-    setSelectedQuantity(1);
-    setQuantityModalVisible(true);
+    setQuantity(1);
   };
 
-  const handleConfirmPurchase = async () => {
-    if (!selectedDrink || !selectedUser) return;
+  const closeSheet = () => {
+    if (isPurchasing) return;
+    setSelectedDrink(null);
+  };
 
-    const maxQuantity = Math.min(selectedDrink.stock, 10); // Maximal 10 Getränke auf einmal
-    const quantity = Math.min(selectedQuantity, maxQuantity);
-    const totalPrice = selectedDrink.price * quantity;
+  const confirmPurchase = async () => {
+    if (!selectedDrink || !selectedUser || isPurchasing) return;
+    const qty = Math.min(quantity, maxQuantity);
+    const total = selectedDrink.price * qty;
+    const newBalance = selectedUser.balance - total;
 
+    setIsPurchasing(true);
     try {
-      const newBalance = selectedUser.balance - totalPrice;
-      const balanceMessage =
-        newBalance < 0
-          ? `Ihr offener Betrag: CHF ${Math.abs(newBalance).toFixed(2)}`
-          : `Ihre Balance: CHF ${newBalance.toFixed(2)}`;
-
-      await purchaseDrink({ userId: selectedUser.id, drinkId: selectedDrink.id, quantity });
-
-      Alert.alert('Erfolg', `${quantity}x ${selectedDrink.name} wurde erfolgreich gekauft!\n\n${balanceMessage}`, [
-        { text: 'OK', style: 'default' },
-      ]);
-
-      // Modal schließen
-      setQuantityModalVisible(false);
+      await purchaseDrink({ userId: selectedUser.id, drinkId: selectedDrink.id, quantity: qty });
       setSelectedDrink(null);
-      setSelectedQuantity(1);
+      const balanceLine =
+        newBalance < 0 ? `Offener Betrag: ${formatChf(Math.abs(newBalance))}` : `Guthaben: ${formatChf(newBalance)}`;
+      Alert.alert('Gekauft', `${qty}× ${selectedDrink.name} für ${formatChf(total)}\n${balanceLine}`);
     } catch (error) {
       console.error('Fehler beim Kaufen des Getränks:', error);
       Alert.alert('Fehler', 'Beim Kaufen des Getränks ist ein Fehler aufgetreten.');
+    } finally {
+      setIsPurchasing(false);
     }
   };
 
-  const renderUserSelector = () => (
-    <View style={styles.userSelectorContainer}>
-      <Text style={styles.sectionTitle}>Benutzer auswählen</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.userList}>
+  return (
+    <Screen>
+      {/* Benutzer-Auswahl */}
+      <SectionHeader title="Wer trinkt?" subtitle={users.length === 0 ? undefined : 'Benutzer antippen zum Wechseln'} />
+      {users.length === 0 ? (
+        <EmptyState
+          icon="person-add"
+          title="Noch keine Benutzer"
+          message="Lege im Admin-Bereich den ersten Benutzer an, um Getränke zu verbuchen."
+        />
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.chipRow, { paddingHorizontal: horizontalPadding }]}
+          style={[styles.chipScroll, { marginHorizontal: -horizontalPadding }]}
+        >
           {users.map((user) => (
-            <TouchableOpacity
+            <UserChip
               key={user.id}
-              style={[styles.userItem, selectedUser?.id === user.id && styles.userItemSelected]}
+              name={user.name}
+              balance={user.balance}
+              selected={selectedUser?.id === user.id}
               onPress={() => selectUser(user.id)}
-            >
-              <Text style={[styles.userName, selectedUser?.id === user.id && styles.userNameSelected]}>
-                {user.name}
-              </Text>
-              <Text style={[styles.userBalance, user.balance < 0 && styles.negativeBalance]}>
-                CHF {user.balance.toFixed(2)}
-              </Text>
-            </TouchableOpacity>
+            />
           ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
+        </ScrollView>
+      )}
 
-  const renderDrinksGrid = () => (
-    <View style={styles.drinksContainer}>
-      <View style={styles.drinksHeader}>
-        <Text style={styles.sectionTitle}>Verfügbare Getränke</Text>
-        <TouchableOpacity style={styles.refreshButton} onPress={refreshData} disabled={isHydrating}>
-          <MaterialIcons name="refresh" size={20} color={isHydrating ? '#8E8E93' : '#007AFF'} />
-        </TouchableOpacity>
+      {/* Hero: aktueller Benutzer */}
+      {selectedUser && (
+        <Card tone="primary" style={styles.hero}>
+          <View style={styles.heroRow}>
+            <Avatar name={selectedUser.name} size={52} inverted />
+            <View style={styles.heroTexts}>
+              <Text style={styles.heroLabel} numberOfLines={1}>
+                {selectedUser.balance < 0 ? 'Offener Betrag' : 'Guthaben'}
+              </Text>
+              <Text style={styles.heroValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                {formatChf(Math.abs(selectedUser.balance))}
+              </Text>
+            </View>
+            <View style={styles.heroStat}>
+              <Text style={styles.heroStatValue}>{selectedUser.monthlyCount}</Text>
+              <Text style={styles.heroStatLabel}>diesen Monat</Text>
+            </View>
+          </View>
+        </Card>
+      )}
+
+      {/* Getränke */}
+      <View style={styles.drinksSection}>
+        <SectionHeader
+          title="Getränke"
+          subtitle={selectedUser ? `Antippen, um für ${selectedUser.name} zu buchen` : undefined}
+          action={
+            <IconButton
+              icon="refresh"
+              tone="primary"
+              accessibilityLabel="Daten aktualisieren"
+              onPress={() => void hydrate()}
+              disabled={isHydrating}
+            />
+          }
+        />
+
+        {drinks.length === 0 ? (
+          <EmptyState
+            icon="sports-bar"
+            title="Keine Getränke angelegt"
+            message="Füge im Admin-Bereich Getränke mit Preis und Bestand hinzu."
+          />
+        ) : (
+          <View style={styles.grid}>
+            {drinks.map((drink) => {
+              const soldOut = drink.stock <= 0;
+              const low = !soldOut && drink.stock <= LOW_STOCK;
+              return (
+                <Pressable
+                  key={drink.id}
+                  onPress={() => openQuantitySheet(drink)}
+                  disabled={soldOut || !selectedUser}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${drink.name}, ${formatChf(drink.price)}`}
+                  style={({ pressed }) => [
+                    styles.drinkCard,
+                    { width: cardWidth },
+                    pressed && styles.drinkCardPressed,
+                    (soldOut || !selectedUser) && styles.drinkCardDisabled,
+                  ]}
+                >
+                  <DrinkIcon iconKey={drink.iconKey} size={26} boxed />
+                  <Text style={styles.drinkName} numberOfLines={2}>
+                    {drink.name}
+                  </Text>
+                  <Text style={styles.drinkPrice}>{formatChf(drink.price)}</Text>
+                  <View style={styles.drinkFooter}>
+                    <Badge
+                      label={soldOut ? 'Ausverkauft' : `${drink.stock} verfügbar`}
+                      tone={soldOut ? 'danger' : low ? 'warning' : 'neutral'}
+                    />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
       </View>
-      <View style={[styles.drinksGrid, isWide && styles.drinksGridWide]}>
-        {drinks.map((drink) => (
-          <TouchableOpacity
-            key={drink.id}
-            style={[styles.drinkItem, drink.stock <= 0 && styles.drinkItemOutOfStock]}
-            onPress={() => handleDrinkPurchase(drink)}
-            disabled={drink.stock <= 0}
-          >
-            <DrinkIcon iconKey={drink.iconKey} size={40} />
-            <Text style={styles.drinkName}>{drink.name}</Text>
-            <Text style={styles.drinkPrice}>CHF {drink.price.toFixed(2)}</Text>
-            <Text style={[styles.drinkStock, drink.stock <= 5 && styles.drinkStockLow]}>
-              {drink.stock <= 0 ? 'Ausverkauft' : `${drink.stock} verfügbar`}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
+
+      <QuantitySheet
+        drink={selectedDrink}
+        quantity={quantity}
+        maxQuantity={maxQuantity}
+        isBusy={isPurchasing}
+        onChangeQuantity={setQuantity}
+        onClose={closeSheet}
+        onConfirm={confirmPurchase}
+      />
+    </Screen>
   );
+};
 
-  const renderQuantityModal = () => (
-    <Modal
-      visible={quantityModalVisible}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setQuantityModalVisible(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Menge auswählen</Text>
-            <TouchableOpacity onPress={() => setQuantityModalVisible(false)} style={styles.closeButton}>
-              <MaterialIcons name="close" size={24} color="#000000" />
-            </TouchableOpacity>
-          </View>
+type SheetProps = {
+  drink: Drink | null;
+  quantity: number;
+  maxQuantity: number;
+  isBusy: boolean;
+  onChangeQuantity: (q: number) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+};
 
-          {selectedDrink && (
-            <View style={styles.drinkInfoContainer}>
-              <DrinkIcon iconKey={selectedDrink.iconKey} size={60} />
-              <Text style={styles.drinkNameLarge}>{selectedDrink.name}</Text>
-              <Text style={styles.drinkPriceLarge}>CHF {selectedDrink.price.toFixed(2)}</Text>
-              <Text style={styles.drinkStockInfo}>{selectedDrink.stock} verfügbar</Text>
-            </View>
+/** Bottom-Sheet zur Mengenauswahl – auf iPad zentriert und in der Breite begrenzt. */
+const QuantitySheet: React.FC<SheetProps> = ({
+  drink,
+  quantity,
+  maxQuantity,
+  isBusy,
+  onChangeQuantity,
+  onClose,
+  onConfirm,
+}) => {
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 600;
+
+  const clamp = (q: number) => Math.max(1, Math.min(maxQuantity, q));
+  const total = drink ? drink.price * quantity : 0;
+
+  return (
+    <Modal visible={drink !== null} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={[styles.sheetBackdrop, isWide && styles.sheetBackdropWide]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Schließen" />
+        <View style={[styles.sheet, isWide ? styles.sheetWide : { paddingBottom: insets.bottom + spacing.lg }]}>
+          <View style={styles.sheetHandle} />
+          {drink && (
+            <>
+              <View style={styles.sheetHeader}>
+                <DrinkIcon iconKey={drink.iconKey} size={28} boxed />
+                <View style={styles.sheetTitles}>
+                  <Text style={styles.sheetTitle} numberOfLines={2}>
+                    {drink.name}
+                  </Text>
+                  <Text style={styles.sheetSubtitle}>
+                    {formatChf(drink.price)} · {drink.stock} verfügbar
+                  </Text>
+                </View>
+                <IconButton icon="close" accessibilityLabel="Schließen" onPress={onClose} />
+              </View>
+
+              <View style={styles.stepperRow}>
+                <Text style={styles.stepperLabel}>Menge</Text>
+                <View style={styles.stepper}>
+                  <Pressable
+                    onPress={() => onChangeQuantity(clamp(quantity - 1))}
+                    disabled={quantity <= 1}
+                    accessibilityLabel="Menge verringern"
+                    style={({ pressed }) => [
+                      styles.stepBtn,
+                      pressed && styles.stepBtnPressed,
+                      quantity <= 1 && styles.stepBtnDisabled,
+                    ]}
+                  >
+                    <MaterialIcons name="remove" size={22} color={colors.textPrimary} />
+                  </Pressable>
+                  <TextInput
+                    style={styles.stepInput}
+                    value={String(quantity)}
+                    onChangeText={(t) => onChangeQuantity(clamp(parseInt(t, 10) || 1))}
+                    keyboardType="number-pad"
+                    textAlign="center"
+                    maxLength={2}
+                    selectTextOnFocus
+                  />
+                  <Pressable
+                    onPress={() => onChangeQuantity(clamp(quantity + 1))}
+                    disabled={quantity >= maxQuantity}
+                    accessibilityLabel="Menge erhöhen"
+                    style={({ pressed }) => [
+                      styles.stepBtn,
+                      pressed && styles.stepBtnPressed,
+                      quantity >= maxQuantity && styles.stepBtnDisabled,
+                    ]}
+                  >
+                    <MaterialIcons name="add" size={22} color={colors.textPrimary} />
+                  </Pressable>
+                </View>
+              </View>
+              <Text style={styles.stepperHint}>Maximal {maxQuantity} pro Buchung</Text>
+
+              <View style={styles.sheetActions}>
+                <Button
+                  label="Abbrechen"
+                  variant="secondary"
+                  onPress={onClose}
+                  disabled={isBusy}
+                  style={styles.sheetActionSecondary}
+                />
+                <Button
+                  label={`Kaufen · ${formatChf(total)}`}
+                  variant="primary"
+                  size="lg"
+                  icon="shopping-cart"
+                  onPress={onConfirm}
+                  loading={isBusy}
+                  style={styles.sheetActionPrimary}
+                />
+              </View>
+            </>
           )}
-
-          <View style={styles.quantityContainer}>
-            <Text style={styles.quantityLabel}>Menge:</Text>
-            <View style={styles.quantityInputContainer}>
-              <TouchableOpacity
-                style={styles.quantityButton}
-                onPress={() => setSelectedQuantity(Math.max(1, selectedQuantity - 1))}
-                disabled={selectedQuantity <= 1}
-              >
-                <MaterialIcons name="remove" size={20} color="#007AFF" />
-              </TouchableOpacity>
-
-              <TextInput
-                style={styles.quantityInput}
-                value={selectedQuantity.toString()}
-                onChangeText={(text) => {
-                  const num = parseInt(text) || 1;
-                  setSelectedQuantity(Math.max(1, Math.min(num, Math.min(selectedDrink?.stock || 1, 10))));
-                }}
-                keyboardType="numeric"
-                textAlign="center"
-                maxLength={2}
-              />
-
-              <TouchableOpacity
-                style={styles.quantityButton}
-                onPress={() => setSelectedQuantity(Math.min(selectedDrink?.stock || 1, selectedQuantity + 1, 10))}
-                disabled={selectedQuantity >= Math.min(selectedDrink?.stock || 1, 10)}
-              >
-                <MaterialIcons name="add" size={20} color="#007AFF" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {selectedDrink && (
-            <View style={styles.totalContainer}>
-              <Text style={styles.totalLabel}>Gesamtpreis:</Text>
-              <Text style={styles.totalPrice}>CHF {(selectedDrink.price * selectedQuantity).toFixed(2)}</Text>
-            </View>
-          )}
-
-          <View style={styles.modalButtons}>
-            <TouchableOpacity style={styles.cancelModalButton} onPress={() => setQuantityModalVisible(false)}>
-              <Text style={styles.cancelModalButtonText}>Abbrechen</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmPurchase}>
-              <Text style={styles.confirmButtonText}>Kaufen</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     </Modal>
   );
-
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {renderUserSelector()}
-      {renderDrinksGrid()}
-
-      {!selectedUser && (
-        <View style={styles.noUserContainer}>
-          <Text style={styles.noUserTitle}>Kein Benutzer ausgewählt</Text>
-          <Text style={styles.noUserTitle}>
-            Bitte fügen Sie über den Admin-Bereich einen Benutzer hinzu, um Getränke kaufen zu können.
-          </Text>
-        </View>
-      )}
-
-      {selectedUser && drinks.length === 0 && (
-        <View style={styles.noDrinksContainer}>
-          <Text style={styles.noDrinksTitle}>Keine Getränke verfügbar</Text>
-          <Text style={styles.noDrinksText}>Bitte fügen Sie über den Admin-Bereich Getränke hinzu.</Text>
-        </View>
-      )}
-
-      {renderQuantityModal()}
-    </ScrollView>
-  );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
+  chipScroll: {
+    marginBottom: spacing.xl,
   },
-  contentContainer: {
-    padding: 20,
+  chipRow: {
+    gap: spacing.sm + 2,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+
+  hero: {
+    marginBottom: spacing.xl,
+    ...shadow.elevated,
   },
-  loadingText: {
-    fontSize: 18,
-    color: '#8E8E93',
-  },
-  userSelectorContainer: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginBottom: 15,
-  },
-  userList: {
+  heroRow: {
     flexDirection: 'row',
-    gap: 15,
-  },
-  userItem: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E5E5EA',
-    minWidth: 120,
     alignItems: 'center',
+    gap: spacing.md,
   },
-  userItemSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F8FF',
+  heroTexts: {
+    flex: 1,
+    minWidth: 0,
   },
-  userName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginBottom: 5,
+  heroLabel: {
+    ...typography.caption,
+    color: 'rgba(255,255,255,0.8)',
   },
-  userNameSelected: {
-    color: '#007AFF',
+  heroValue: {
+    ...typography.display,
+    fontSize: 28,
+    lineHeight: 34,
+    color: colors.textOnPrimary,
   },
-  userBalance: {
-    fontSize: 14,
-    color: '#8E8E93',
+  heroStat: {
+    alignItems: 'flex-end',
+    paddingLeft: spacing.md,
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255,255,255,0.25)',
   },
-  drinksContainer: {
-    marginBottom: 30,
+  heroStatValue: {
+    ...typography.title,
+    color: colors.textOnPrimary,
   },
-  drinksHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
+  heroStatLabel: {
+    ...typography.small,
+    color: 'rgba(255,255,255,0.8)',
   },
-  refreshButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#F2F2F7',
+
+  drinksSection: {
+    marginBottom: spacing.lg,
   },
-  drinksGrid: {
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 15,
+    gap: GRID_GAP,
   },
-  drinksGridWide: {
-    justifyContent: 'space-between',
+  drinkCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadow.card,
   },
-  drinkItem: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-    minWidth: 120,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  drinkCardPressed: {
+    backgroundColor: colors.surfaceMuted,
+    transform: [{ scale: 0.98 }],
   },
-  drinkItemOutOfStock: {
-    opacity: 0.5,
+  drinkCardDisabled: {
+    opacity: 0.55,
   },
   drinkName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginTop: 10,
-    marginBottom: 5,
-    textAlign: 'center',
+    ...typography.heading,
+    color: colors.textPrimary,
+    marginTop: spacing.md,
   },
   drinkPrice: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 5,
+    ...typography.title,
+    fontSize: 20,
+    lineHeight: 26,
+    color: colors.accent,
+    marginTop: spacing.xs,
   },
-  drinkStock: {
-    fontSize: 14,
-    color: '#8E8E93',
+  drinkFooter: {
+    // Karten einer Zeile werden auf gleiche Höhe gestreckt; der Footer sitzt immer unten.
+    flexDirection: 'row',
+    marginTop: 'auto',
+    paddingTop: spacing.md,
   },
-  drinkStockLow: {
-    color: '#FF3B30',
-    fontWeight: '600',
-  },
-  negativeBalance: {
-    color: '#FF3B30',
-    fontWeight: '600',
-  },
-  noUserContainer: {
-    backgroundColor: '#FFF3CD',
-    borderColor: '#FFEAA7',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 20,
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  noUserTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#856404',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  noUserText: {
-    fontSize: 14,
-    color: '#856404',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  noDrinksContainer: {
-    backgroundColor: '#D1ECF1',
-    borderColor: '#BEE5EB',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 20,
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  noDrinksTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0C5460',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  noDrinksText: {
-    fontSize: 14,
-    color: '#0C5460',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  // Modal Styles
-  modalOverlay: {
+
+  // Bottom Sheet
+  sheetBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
+    justifyContent: 'flex-end',
+  },
+  sheetBackdropWide: {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    width: '90%',
-    maxWidth: 400,
-    maxHeight: '80%',
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    ...shadow.modal,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+  sheetWide: {
+    width: '100%',
+    maxWidth: 440,
+    borderRadius: radius.xl,
+    paddingBottom: spacing.xl,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  drinkInfoContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  drinkNameLarge: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginTop: 10,
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  drinkPriceLarge: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 5,
-  },
-  drinkStockInfo: {
-    fontSize: 14,
-    color: '#8E8E93',
-  },
-  quantityContainer: {
-    marginBottom: 20,
-  },
-  quantityLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000000',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  quantityInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 15,
-  },
-  quantityButton: {
-    ...getPlatformStyle('button'),
+  sheetHandle: {
+    alignSelf: 'center',
     width: 40,
-    height: 40,
-    borderRadius: isAndroid ? 20 : 20,
-    backgroundColor: '#F2F2F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: isAndroid ? 48 : 40,
-    minWidth: isAndroid ? 48 : 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    marginBottom: spacing.lg,
   },
-  quantityInput: {
-    width: 60,
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-    borderRadius: 8,
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  totalContainer: {
+  sheetHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000000',
+  sheetTitles: {
+    flex: 1,
+    minWidth: 0,
   },
-  totalPrice: {
+  sheetTitle: {
+    ...typography.heading,
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    lineHeight: 24,
+    color: colors.textPrimary,
   },
-  modalButtons: {
+  sheetSubtitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  stepperRow: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
-  cancelModalButton: {
-    ...getPlatformStyle('button'),
-    flex: 1,
-    backgroundColor: '#8E8E93',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: isAndroid ? 4 : 8,
+  stepperLabel: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    padding: 4,
+    gap: 4,
+  },
+  stepBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: isAndroid ? 48 : undefined,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  cancelModalButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: isAndroid ? 16 : 14,
+  stepBtnPressed: {
+    backgroundColor: colors.primarySoft,
   },
-  confirmButton: {
-    ...getPlatformStyle('button'),
+  stepBtnDisabled: {
+    opacity: 0.4,
+  },
+  stepInput: {
+    width: 56,
+    height: 44,
+    ...typography.title,
+    color: colors.textPrimary,
+    paddingVertical: 0,
+  },
+  stepperHint: {
+    ...typography.small,
+    fontWeight: '400',
+    color: colors.textMuted,
+    textAlign: 'right',
+    marginTop: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  sheetActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  sheetActionSecondary: {
     flex: 1,
-    backgroundColor: '#00D4AA',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: isAndroid ? 4 : 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: isAndroid ? 48 : undefined,
+    minHeight: 52,
   },
-  confirmButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: isAndroid ? 16 : 14,
+  sheetActionPrimary: {
+    flex: 2,
   },
 });

@@ -1,132 +1,93 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, shadow, spacing } from '../../theme';
+import { colors, radius, spacing, typography } from '../../theme';
 
-/** Gemeinsame Styles der Admin-Sektionen (Karten, Formulare, Buttons). */
+/** Gemeinsame Styles der Admin-Sektionen (Listen-Karten, Formulare). */
 export const adminStyles = StyleSheet.create({
-  sectionContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-  },
-  iconButton: {
-    padding: spacing.sm,
+  section: {
+    marginBottom: spacing.xl,
   },
   addForm: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.sm,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  input: {
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    padding: spacing.md,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
     marginBottom: spacing.md,
-    fontSize: 16,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  addFormTitle: {
+    ...typography.heading,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
   },
   formButtons: {
     flexDirection: 'row',
     gap: spacing.md,
+    marginTop: spacing.xs,
   },
-  cancelButton: {
+  formButton: {
     flex: 1,
-    backgroundColor: colors.textSecondary,
-    padding: spacing.md,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: colors.textOnPrimary,
-    fontWeight: '600',
-  },
-  saveButton: {
-    flex: 1,
-    backgroundColor: colors.primary,
-    padding: spacing.md,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: colors.textOnPrimary,
-    fontWeight: '600',
   },
   card: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
-    ...shadow.card,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  cardAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
-    backgroundColor: colors.avatarBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
+    gap: spacing.md,
   },
   cardInfo: {
     flex: 1,
-    marginRight: spacing.md,
+    minWidth: 0,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...typography.heading,
     color: colors.textPrimary,
   },
   cardSubtitle: {
-    fontSize: 14,
+    ...typography.caption,
     color: colors.textSecondary,
     marginTop: 2,
   },
   cardMetric: {
     alignItems: 'flex-end',
+    flexShrink: 0,
   },
   cardMetricLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    ...typography.small,
+    fontWeight: '400',
+    color: colors.textMuted,
+    marginBottom: 2,
   },
   cardMetricValue: {
+    ...typography.heading,
     fontSize: 18,
-    fontWeight: 'bold',
+    lineHeight: 24,
   },
-  deleteButton: {
+  cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.sm,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surfaceDanger,
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  deleteButtonText: {
-    color: colors.danger,
-    fontWeight: '600',
-    fontSize: 14,
-    marginLeft: spacing.xs,
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 2,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  metaText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    flexShrink: 1,
   },
 });

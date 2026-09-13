@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import {
   ConsumptionSchema,
@@ -66,6 +67,12 @@ export class DatabaseService {
   }
 
   private async initializeSQLite(): Promise<void> {
+    if (Platform.OS === 'web') {
+      // expo-sqlite ist im Web ohne zusätzliches WASM-Setup nicht verfügbar; direkt AsyncStorage nutzen.
+      this.sqliteDb = null;
+      this.useSQLite = false;
+      return;
+    }
     try {
       this.sqliteDb = await SQLite.openDatabaseAsync('getraenke.db');
       this.useSQLite = true;

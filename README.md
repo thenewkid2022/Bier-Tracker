@@ -156,14 +156,14 @@ src/
 │   ├── TwintSection.tsx
 │   └── adminStyles.ts
 ├── components/
-│   ├── DrinkIcon.tsx
+│   ├── ui/                   # Design-System-Bausteine (Button, Card, StatTile, UserChip, TextField, …)
+│   ├── DrinkIcon.tsx         # Getränke-Icons inkl. Farbschema je Getränkeart
 │   ├── TwintPaymentRequest.tsx
 │   └── TwintAdminConfig.tsx
 ├── models/                   # Kompatibilitäts-Re-Exports auf src/domain
 ├── utils/
-│   ├── id.ts                 # generateId()
-│   └── platformStyles.ts     # iOS/Android-Style-Unterschiede
-├── theme.ts                  # Design-Tokens (Farben, Spacing, Radius, Schatten)
+│   └── id.ts                 # generateId()
+├── theme.ts                  # Design-Tokens (Farben, Spacing, Radius, Typografie, Breakpoints)
 └── __tests__/                # Jest-Tests
 
 .maestro/smoke.yaml           # E2E-Flow
@@ -293,7 +293,7 @@ Weitere Details: `TESTFLIGHT_SETUP.md`, `GOOGLE_PLAY_CHECKLIST.md`, `google-play
 - [ ] Admin-PIN in der App änderbar machen
 - [ ] Getränke bearbeiten (Preis/Bestand) statt nur anlegen/löschen
 - [ ] Export (CSV/JSON) der Konsum-Historie
-- [ ] `HomeScreen`/`ProfileScreen` vollständig auf Theme-Tokens umstellen; `TwintPaymentRequest` / `TwintAdminConfig` aufteilen
+- [ ] Dark Mode (Tokens in `src/theme.ts` sind dafür vorbereitet)
 - [ ] Component-Tests mit `@testing-library/react-native`
 - [ ] Upgrade auf Expo SDK 54+ sobald alle Abhängigkeiten stabil sind
 

@@ -13,31 +13,33 @@ env:
 
 # Home: Demo-Daten sind geladen
 - assertVisible: 'Getränke Tracker'
-- assertVisible: 'Benutzer auswählen'
+- assertVisible: 'Wer trinkt?'
 - assertVisible: 'Max Mustermann'
 - assertVisible: 'Bier'
 
-# Kauf-Flow: Getränk antippen -> Mengen-Modal -> bestätigen
+# Kauf-Flow: Getränk antippen -> Mengen-Sheet -> bestätigen
 - tapOn: 'Max Mustermann'
 - tapOn:
     text: 'Bier'
     index: 0
-- assertVisible: 'Menge auswählen'
-- tapOn: 'Kaufen'
-- assertVisible: 'Erfolg'
+- assertVisible: 'Menge'
+- tapOn:
+    text: 'Kaufen.*'
+- assertVisible: 'Gekauft'
 - tapOn: 'OK'
 
 # Profil-Tab zeigt den Kauf
 - tapOn: 'Profil'
 - assertVisible: 'Max Mustermann'
+- assertVisible: 'Letzte Einkäufe'
 - assertVisible: 'Bier'
 
 # Admin-Tab: PIN-Gate
 - tapOn: 'Admin'
-- assertVisible: 'Admin-Zugang'
-- tapOn: 'PIN-Code eingeben'
-- inputText: '1234'
-- tapOn: 'Anmelden'
 - assertVisible: 'Admin-Bereich'
-- assertVisible: 'Benutzer-Verwaltung'
-- assertVisible: 'Getränke-Verwaltung'
+- tapOn: 'PIN eingeben'
+- inputText: '1234'
+- tapOn: 'Entsperren'
+- assertVisible: 'Verwaltung'
+- assertVisible: 'Benutzer'
+- assertVisible: 'Getränke'

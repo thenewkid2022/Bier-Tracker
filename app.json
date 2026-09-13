@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thenewkid2022.bierlounge-tracker",
-      "buildNumber": "8",
+      "buildNumber": "9",
       "infoPlist": {
         "NSUserNotificationUsageDescription": "Diese App verwendet Benachrichtigungen, um Sie über Ihre Getränke-Einkäufe zu informieren.",
         "LSApplicationQueriesSchemes": ["twint"],
@@ -33,7 +33,7 @@
     },
     "android": {
       "package": "com.ragnarus.getraenketracker",
-      "versionCode": 8,
+      "versionCode": 9,
       "backgroundColor": "#00D4AA",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { adminStyles } from './adminStyles';
-import { DrinkIcon } from '../../components/DrinkIcon';
-import { colors, radius, spacing } from '../../theme';
+import { DrinkIcon, getDrinkIconSpec } from '../../components/DrinkIcon';
+import { Badge, Button, EmptyState, IconButton, SectionHeader, TextField } from '../../components/ui';
+import { colors, formatChf, radius, spacing, typography } from '../../theme';
 import type { Drink, DrinkIconKey } from '../../domain/schemas';
 
 const ICON_OPTIONS: readonly { key: DrinkIconKey; label: string }[] = [
@@ -53,110 +53,148 @@ export const DrinkManagementSection: React.FC<Props> = ({ drinks, onAddDrink, on
     }
   };
 
+  const canSave = name.trim().length > 0 && price.trim().length > 0 && stock.trim().length > 0;
+
   return (
-    <View style={adminStyles.sectionContainer}>
-      <View style={adminStyles.sectionHeader}>
-        <Text style={adminStyles.sectionTitle}>Getränke-Verwaltung</Text>
-        <TouchableOpacity style={adminStyles.iconButton} onPress={() => setShowAddForm((v) => !v)}>
-          <MaterialIcons name="add" size={24} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
+    <View style={adminStyles.section}>
+      <SectionHeader
+        title="Getränke"
+        subtitle={`${drinks.length} im Sortiment`}
+        action={
+          <IconButton
+            icon={showAddForm ? 'close' : 'add'}
+            tone="primary"
+            onPress={() => setShowAddForm((v) => !v)}
+            accessibilityLabel={showAddForm ? 'Formular schließen' : 'Getränk hinzufügen'}
+          />
+        }
+      />
 
       {showAddForm && (
         <View style={adminStyles.addForm}>
-          <TextInput style={adminStyles.input} placeholder="Getränkename" value={name} onChangeText={setName} />
-          <TextInput
-            style={adminStyles.input}
-            placeholder="Preis (CHF)"
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="decimal-pad"
-          />
-          <TextInput
-            style={adminStyles.input}
-            placeholder="Bestand"
-            value={stock}
-            onChangeText={setStock}
-            keyboardType="number-pad"
-          />
-
-          <View style={styles.iconSelectionContainer}>
-            <Text style={styles.iconSelectionLabel}>Icon auswählen:</Text>
-            <View style={styles.iconGrid}>
-              {ICON_OPTIONS.map((option) => {
-                const selected = iconKey === option.key;
-                return (
-                  <TouchableOpacity
-                    key={option.key}
-                    style={[styles.iconOption, selected && styles.iconOptionSelected]}
-                    onPress={() => setIconKey(option.key)}
-                  >
-                    <DrinkIcon
-                      iconKey={option.key}
-                      size={24}
-                      color={selected ? colors.textOnPrimary : colors.primary}
-                    />
-                    <Text style={[styles.iconOptionLabel, selected && styles.iconOptionLabelSelected]}>
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+          <Text style={adminStyles.addFormTitle}>Neues Getränk</Text>
+          <TextField label="Name" placeholder="z. B. Bier 0.5 l" value={name} onChangeText={setName} autoFocus />
+          <View style={styles.twoColumns}>
+            <View style={styles.column}>
+              <TextField
+                label="Preis (CHF)"
+                placeholder="3.50"
+                value={price}
+                onChangeText={setPrice}
+                keyboardType="decimal-pad"
+              />
+            </View>
+            <View style={styles.column}>
+              <TextField
+                label="Bestand"
+                placeholder="24"
+                value={stock}
+                onChangeText={setStock}
+                keyboardType="number-pad"
+              />
             </View>
           </View>
 
+          <Text style={styles.iconLabel}>Symbol</Text>
+          <View style={styles.iconGrid}>
+            {ICON_OPTIONS.map((option) => {
+              const selected = iconKey === option.key;
+              const spec = getDrinkIconSpec(option.key);
+              return (
+                <Pressable
+                  key={option.key}
+                  onPress={() => setIconKey(option.key)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  style={[styles.iconOption, selected && { borderColor: spec.tint, backgroundColor: spec.bg }]}
+                >
+                  <DrinkIcon iconKey={option.key} size={22} />
+                  <Text style={[styles.iconOptionLabel, selected && { color: spec.tint }]} numberOfLines={1}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
           <View style={adminStyles.formButtons}>
-            <TouchableOpacity style={adminStyles.cancelButton} onPress={resetForm}>
-              <Text style={adminStyles.cancelButtonText}>Abbrechen</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={adminStyles.saveButton} onPress={handleAdd} disabled={isSaving}>
-              <Text style={adminStyles.saveButtonText}>Hinzufügen</Text>
-            </TouchableOpacity>
+            <Button label="Abbrechen" variant="secondary" onPress={resetForm} style={adminStyles.formButton} />
+            <Button
+              label="Hinzufügen"
+              icon="check"
+              onPress={handleAdd}
+              loading={isSaving}
+              disabled={!canSave}
+              style={adminStyles.formButton}
+            />
           </View>
         </View>
       )}
 
-      {drinks.map((drink) => (
-        <View key={drink.id} style={adminStyles.card}>
-          <View style={adminStyles.cardHeader}>
-            <View style={adminStyles.cardAvatar}>
-              <DrinkIcon iconKey={drink.iconKey} size={24} />
+      {drinks.length === 0 && !showAddForm ? (
+        <EmptyState
+          icon="sports-bar"
+          title="Noch keine Getränke"
+          message="Lege über das Plus oben rechts das erste Getränk an."
+        />
+      ) : (
+        drinks.map((drink) => {
+          const soldOut = drink.stock <= 0;
+          const low = !soldOut && drink.stock <= LOW_STOCK_THRESHOLD;
+          return (
+            <View key={drink.id} style={adminStyles.card}>
+              <View style={adminStyles.cardHeader}>
+                <DrinkIcon iconKey={drink.iconKey} size={22} boxed />
+                <View style={adminStyles.cardInfo}>
+                  <Text style={adminStyles.cardTitle} numberOfLines={1}>
+                    {drink.name}
+                  </Text>
+                  <Text style={[adminStyles.cardSubtitle, styles.price]}>{formatChf(drink.price)}</Text>
+                </View>
+                <View style={adminStyles.cardMetric}>
+                  <Text style={adminStyles.cardMetricLabel}>Bestand</Text>
+                  <Text
+                    style={[
+                      adminStyles.cardMetricValue,
+                      soldOut ? styles.stockOut : low ? styles.stockLow : styles.stockOk,
+                    ]}
+                  >
+                    {drink.stock}
+                  </Text>
+                </View>
+              </View>
+              <View style={adminStyles.cardFooter}>
+                <Badge
+                  label={soldOut ? 'Ausverkauft' : low ? 'Bestand niedrig' : 'Auf Lager'}
+                  tone={soldOut ? 'danger' : low ? 'warning' : 'success'}
+                />
+                <IconButton
+                  icon="delete-outline"
+                  tone="danger"
+                  onPress={() => onDeleteDrink(drink.id)}
+                  accessibilityLabel={`${drink.name} löschen`}
+                />
+              </View>
             </View>
-            <View style={adminStyles.cardInfo}>
-              <Text style={adminStyles.cardTitle}>{drink.name}</Text>
-              <Text style={styles.drinkPrice}>CHF {drink.price.toFixed(2)}</Text>
-            </View>
-            <View style={adminStyles.cardMetric}>
-              <Text style={adminStyles.cardMetricLabel}>Bestand</Text>
-              <Text
-                style={[
-                  adminStyles.cardMetricValue,
-                  drink.stock <= LOW_STOCK_THRESHOLD ? styles.stockLow : styles.stockOk,
-                ]}
-              >
-                {drink.stock}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.drinkCardActions}>
-            <TouchableOpacity style={adminStyles.deleteButton} onPress={() => onDeleteDrink(drink.id)}>
-              <MaterialIcons name="delete" size={18} color={colors.danger} />
-              <Text style={adminStyles.deleteButtonText}>Löschen</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ))}
+          );
+        })
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  drinkPrice: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '500',
-    marginTop: 2,
+  twoColumns: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  column: {
+    flex: 1,
+    minWidth: 0,
+  },
+  price: {
+    color: colors.accent,
+    fontWeight: '600',
   },
   stockOk: {
     color: colors.success,
@@ -164,45 +202,33 @@ const styles = StyleSheet.create({
   stockLow: {
     color: colors.warning,
   },
-  drinkCardActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+  stockOut: {
+    color: colors.danger,
   },
-  iconSelectionContainer: {
-    marginBottom: spacing.lg,
-  },
-  iconSelectionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+  iconLabel: {
+    ...typography.captionStrong,
     color: colors.textPrimary,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   iconGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   iconOption: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: radius.sm,
-    backgroundColor: colors.background,
-    borderWidth: 2,
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    minWidth: 80,
-  },
-  iconOptionSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.surface,
   },
   iconOptionLabel: {
-    fontSize: 12,
-    color: colors.primary,
-    marginTop: spacing.xs,
-    textAlign: 'center',
-  },
-  iconOptionLabelSelected: {
-    color: colors.textOnPrimary,
+    ...typography.captionStrong,
+    color: colors.textSecondary,
   },
 });

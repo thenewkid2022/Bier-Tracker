@@ -1,25 +1,49 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import React, { useCallback, useEffect } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useShallow } from 'zustand/react/shallow';
+import { DrinkIcon } from '../components/DrinkIcon';
+import {
+  Avatar,
+  Button,
+  Card,
+  EmptyState,
+  IconButton,
+  Screen,
+  SectionHeader,
+  StatTile,
+  UserChip,
+} from '../components/ui';
 import { useAppStore } from '../state/appStore';
-import type { UserProfile } from '../domain/schemas';
+import { colors, formatChf, spacing, typography } from '../theme';
+import type { Consumption } from '../domain/schemas';
+
+const RECENT_LIMIT = 10;
+
+function nameOf(c: Consumption): string {
+  return c.drinkName ?? 'Getränk';
+}
+
+function formatDate(timestamp: Consumption['timestamp']): string {
+  const d = new Date(timestamp);
+  return `${d.toLocaleDateString('de-CH')} · ${d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
+}
 
 export const ProfileScreen: React.FC = () => {
   const {
     users,
+    drinks,
     selectedUserId,
     profileConsumptions,
     profileTotalSpent,
     hydrate,
     loadProfile,
-    resetBalance: resetBalanceAction,
-    deleteConsumption: deleteConsumptionAction,
+    resetBalance,
+    deleteConsumption,
   } = useAppStore(
     useShallow((s) => ({
       users: s.users,
+      drinks: s.drinks,
       selectedUserId: s.selectedUserId,
       profileConsumptions: s.profileConsumptions,
       profileTotalSpent: s.profileTotalSpent,
@@ -31,16 +55,15 @@ export const ProfileScreen: React.FC = () => {
   );
 
   const selectedUser = selectedUserId ? (users.find((u) => u.id === selectedUserId) ?? null) : null;
-  const consumptions = profileConsumptions;
-  const totalSpent = profileTotalSpent;
+  const { width } = useWindowDimensions();
+  const horizontalPadding = width >= 600 ? spacing.xxl : spacing.lg;
 
   useEffect(() => {
     hydrate().catch((error) => console.error('Fehler beim Hydraten:', error));
   }, [hydrate]);
 
-  // Daten neu laden, wenn der Screen fokussiert wird
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       const run = async () => {
         try {
           if (selectedUserId) {
@@ -52,33 +75,29 @@ export const ProfileScreen: React.FC = () => {
           console.error('Fehler beim Laden des Profils:', error);
         }
       };
-      run();
+      void run();
     }, [selectedUserId, hydrate, loadProfile])
   );
 
-  const loadUserData = async (userId: string) => {
-    await loadProfile(userId);
-  };
+  const iconKeyForDrink = (drinkId: string, fallbackName: string): string =>
+    drinks.find((d) => d.id === drinkId)?.iconKey ?? (fallbackName.toLowerCase().includes('bier') ? 'beer' : 'default');
 
-  const handleUserSelect = async (user: UserProfile) => {
-    await loadUserData(user.id);
-  };
-
-  const resetBalance = async () => {
+  const handleResetBalance = () => {
     if (!selectedUser) return;
-
+    const hasDebt = selectedUser.balance < 0;
     Alert.alert(
-      'Balance zurücksetzen',
-      `Möchten Sie die Balance von ${selectedUser.name} wirklich auf 0 zurücksetzen?`,
+      hasDebt ? 'Schulden begleichen' : 'Guthaben zurücksetzen',
+      hasDebt
+        ? `${formatChf(Math.abs(selectedUser.balance))} von ${selectedUser.name} als bezahlt markieren?`
+        : `Guthaben von ${selectedUser.name} auf CHF 0.00 setzen?`,
       [
         { text: 'Abbrechen', style: 'cancel' },
         {
-          text: 'Zurücksetzen',
-          style: 'destructive',
+          text: hasDebt ? 'Als bezahlt markieren' : 'Zurücksetzen',
+          style: hasDebt ? 'default' : 'destructive',
           onPress: async () => {
             try {
-              await resetBalanceAction(selectedUser.id);
-              Alert.alert('Erfolg', 'Balance wurde zurückgesetzt.');
+              await resetBalance(selectedUser.id);
             } catch (error) {
               console.error('Fehler beim Zurücksetzen der Balance:', error);
               Alert.alert('Fehler', 'Balance konnte nicht zurückgesetzt werden.');
@@ -89,19 +108,16 @@ export const ProfileScreen: React.FC = () => {
     );
   };
 
-  const deleteConsumption = async (consumptionId: string) => {
-    Alert.alert('Einkauf löschen', 'Möchten Sie diesen Einkauf wirklich löschen?', [
+  const handleDeleteConsumption = (consumption: Consumption) => {
+    Alert.alert('Einkauf löschen', `${nameOf(consumption)} (${formatChf(consumption.price)}) stornieren?`, [
       { text: 'Abbrechen', style: 'cancel' },
       {
         text: 'Löschen',
         style: 'destructive',
         onPress: async () => {
           try {
-            await deleteConsumptionAction(consumptionId);
-            if (selectedUser) {
-              await loadUserData(selectedUser.id);
-            }
-            Alert.alert('Erfolg', 'Einkauf wurde gelöscht.');
+            await deleteConsumption(consumption.id);
+            if (selectedUser) await loadProfile(selectedUser.id);
           } catch (error) {
             console.error('Fehler beim Löschen des Einkaufs:', error);
             Alert.alert('Fehler', 'Einkauf konnte nicht gelöscht werden.');
@@ -111,300 +127,245 @@ export const ProfileScreen: React.FC = () => {
     ]);
   };
 
-  if (!selectedUser) {
+  if (users.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.noUserTitle}>Kein Benutzer verfügbar</Text>
-          <Text style={styles.noUserText}>
-            Bitte fügen Sie über den Admin-Bereich einen Benutzer hinzu, um das Profil anzuzeigen.
-          </Text>
-        </View>
-      </SafeAreaView>
+      <Screen>
+        <EmptyState
+          icon="person-off"
+          title="Noch keine Benutzer"
+          message="Lege im Admin-Bereich einen Benutzer an, um hier Guthaben und Einkäufe zu sehen."
+        />
+      </Screen>
     );
   }
 
+  const hasDebt = (selectedUser?.balance ?? 0) < 0;
+  const recent = profileConsumptions.slice(0, RECENT_LIMIT);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
-        {/* Benutzer-Auswahl */}
-        <View style={styles.userSelectorContainer}>
-          <View style={styles.selectorHeader}>
-            <Text style={styles.selectorTitle}>Benutzer auswählen:</Text>
-            <TouchableOpacity
-              style={styles.refreshButton}
-              onPress={() => selectedUser && loadUserData(selectedUser.id)}
-            >
-              <MaterialIcons name="refresh" size={20} color="#007AFF" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.userSelector}>
-            {users.map((user) => (
-              <TouchableOpacity
-                key={user.id}
-                style={[styles.userSelectorItem, selectedUser.id === user.id && styles.userSelectorItemSelected]}
-                onPress={() => handleUserSelect(user)}
-              >
-                <Text style={[styles.userSelectorText, selectedUser.id === user.id && styles.userSelectorTextSelected]}>
-                  {user.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Benutzer-Header */}
-        <View style={styles.userHeader}>
-          <View style={styles.avatarContainer}>
-            <MaterialIcons name="person" size={48} color="#007AFF" />
-          </View>
-          <Text style={styles.userName}>{selectedUser.name}</Text>
-          <Text style={styles.userEmail}>{selectedUser.email}</Text>
-        </View>
-
-        {/* Statistiken */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, selectedUser.balance < 0 && styles.negativeBalance]}>
-              CHF {selectedUser.balance.toFixed(2)}
-            </Text>
-            <Text style={styles.statLabel}>{selectedUser.balance >= 0 ? 'Aktuelle Balance' : 'Schuldenstand'}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{selectedUser.monthlyCount}</Text>
-            <Text style={styles.statLabel}>Getränke diesen Monat</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>CHF {totalSpent.toFixed(2)}</Text>
-            <Text style={styles.statLabel}>Gesamt ausgegeben</Text>
-          </View>
-        </View>
-
-        {/* Aktionen */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.actionButton} onPress={resetBalance}>
-            <MaterialIcons name="refresh" size={24} color="#FF3B30" />
-            <Text style={[styles.actionButtonText, { color: '#FF3B30' }]}>Balance zurücksetzen</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Letzte Einkäufe */}
-        <View style={styles.recentContainer}>
-          <Text style={styles.sectionTitle}>Letzte Einkäufe</Text>
-          {consumptions.length === 0 ? (
-            <Text style={styles.noDataText}>Noch keine Einkäufe getätigt.</Text>
-          ) : (
-            consumptions.slice(0, 10).map((consumption) => (
-              <View key={consumption.id} style={styles.consumptionItem}>
-                <View style={styles.consumptionInfo}>
-                  <Text style={styles.consumptionDrink}>{consumption.drinkName}</Text>
-                  <Text style={styles.consumptionDate}>
-                    {new Date(consumption.timestamp).toLocaleDateString('de-CH')}
-                  </Text>
-                  <Text style={styles.consumptionPrice}>CHF {consumption.price.toFixed(2)}</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.deleteConsumptionButton}
-                  onPress={() => deleteConsumption(consumption.id)}
-                >
-                  <MaterialIcons name="delete" size={20} color="#FF3B30" />
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
-        </View>
+    <Screen>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={[styles.chipScroll, { marginHorizontal: -horizontalPadding }]}
+        contentContainerStyle={[styles.chipRow, { paddingHorizontal: horizontalPadding }]}
+      >
+        {users.map((user) => (
+          <UserChip
+            key={user.id}
+            name={user.name}
+            selected={selectedUser?.id === user.id}
+            onPress={() => void loadProfile(user.id)}
+          />
+        ))}
       </ScrollView>
-    </SafeAreaView>
+
+      {selectedUser && (
+        <>
+          {/* Kopfbereich */}
+          <Card style={styles.headerCard}>
+            <View style={styles.headerRow}>
+              <Avatar name={selectedUser.name} size={64} />
+              <View style={styles.headerTexts}>
+                <Text style={styles.userName} numberOfLines={1}>
+                  {selectedUser.name}
+                </Text>
+                <Text style={styles.userEmail} numberOfLines={1}>
+                  {selectedUser.email || 'Keine E-Mail hinterlegt'}
+                </Text>
+              </View>
+              <IconButton
+                icon="refresh"
+                tone="primary"
+                accessibilityLabel="Profil aktualisieren"
+                onPress={() => void loadProfile(selectedUser.id)}
+              />
+            </View>
+
+            <View style={[styles.balanceBox, hasDebt ? styles.balanceBoxDebt : styles.balanceBoxOk]}>
+              <Text style={[styles.balanceLabel, hasDebt ? styles.balanceTextDebt : styles.balanceTextOk]}>
+                {hasDebt ? 'Offener Betrag' : 'Guthaben'}
+              </Text>
+              <Text
+                style={[styles.balanceValue, hasDebt ? styles.balanceTextDebt : styles.balanceTextOk]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
+                {formatChf(Math.abs(selectedUser.balance))}
+              </Text>
+            </View>
+          </Card>
+
+          {/* Kennzahlen */}
+          <View style={styles.statRow}>
+            <StatTile
+              icon="local-bar"
+              label="Getränke diesen Monat"
+              value={String(selectedUser.monthlyCount)}
+              tone="primary"
+            />
+            <StatTile
+              icon="receipt-long"
+              label="Gesamt ausgegeben"
+              value={formatChf(profileTotalSpent)}
+              tone="accent"
+            />
+          </View>
+
+          <Button
+            label={hasDebt ? 'Als bezahlt markieren' : 'Guthaben zurücksetzen'}
+            icon={hasDebt ? 'check-circle' : 'restart-alt'}
+            variant={hasDebt ? 'primary' : 'secondary'}
+            onPress={handleResetBalance}
+            fullWidth
+            style={styles.resetButton}
+          />
+
+          {/* Verlauf */}
+          <SectionHeader
+            title="Letzte Einkäufe"
+            subtitle={recent.length > 0 ? `Die letzten ${recent.length} Buchungen` : undefined}
+          />
+          {recent.length === 0 ? (
+            <EmptyState
+              icon="receipt"
+              title="Noch keine Einkäufe"
+              message="Buchungen erscheinen hier, sobald etwas gekauft wurde."
+            />
+          ) : (
+            <Card flush>
+              {recent.map((c, index) => (
+                <View key={c.id} style={[styles.row, index < recent.length - 1 && styles.rowDivider]}>
+                  <DrinkIcon iconKey={iconKeyForDrink(c.drinkId, nameOf(c))} size={20} boxed />
+                  <View style={styles.rowTexts}>
+                    <Text style={styles.rowTitle} numberOfLines={1}>
+                      {nameOf(c)}
+                    </Text>
+                    <Text style={styles.rowMeta} numberOfLines={1}>
+                      {formatDate(c.timestamp)}
+                    </Text>
+                  </View>
+                  <Text style={styles.rowPrice}>{formatChf(c.price)}</Text>
+                  <IconButton
+                    icon="delete-outline"
+                    tone="danger"
+                    size={18}
+                    accessibilityLabel={`${nameOf(c)} löschen`}
+                    onPress={() => handleDeleteConsumption(c)}
+                    style={styles.rowDelete}
+                  />
+                </View>
+              ))}
+            </Card>
+          )}
+        </>
+      )}
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
+  chipScroll: {
+    marginBottom: spacing.lg,
   },
-  content: {
-    flex: 1,
+  chipRow: {
+    gap: spacing.sm + 2,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+
+  headerCard: {
+    marginBottom: spacing.md,
   },
-  noUserTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  noUserText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  userSelectorContainer: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    margin: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-  },
-  selectorHeader: {
+  headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: spacing.md,
   },
-  selectorTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  refreshButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#F2F2F7',
-  },
-  userSelector: {
-    flexDirection: 'row',
-  },
-  userSelectorItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F0F8FF',
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#007AFF',
-  },
-  userSelectorItemSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  userSelectorText: {
-    fontSize: 14,
-    color: '#007AFF',
-  },
-  userSelectorTextSelected: {
-    color: '#FFFFFF',
-  },
-  userHeader: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F0F8FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
+  headerTexts: {
+    flex: 1,
+    minWidth: 0,
   },
   userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
-    marginBottom: 4,
+    ...typography.title,
+    color: colors.textPrimary,
   },
   userEmail: {
-    fontSize: 16,
-    color: '#8E8E93',
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    margin: 16,
-    borderRadius: 12,
-    padding: 16,
-    gap: 16,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 4,
-  },
-  negativeBalance: {
-    color: '#FF3B30',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'center',
-  },
-  actionsContainer: {
-    backgroundColor: '#FFFFFF',
-    margin: 16,
-    borderRadius: 12,
-    padding: 16,
-  },
-  actionButton: {
+  balanceBox: {
+    marginTop: spacing.lg,
+    borderRadius: 14,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    gap: 12,
-  },
-  actionButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  recentContainer: {
-    backgroundColor: '#FFFFFF',
-    margin: 16,
-    borderRadius: 12,
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-    color: '#000000',
-  },
-  noDataText: {
-    textAlign: 'center',
-    color: '#8E8E93',
-    fontStyle: 'italic',
-  },
-  consumptionItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
-    flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  balanceBoxOk: {
+    backgroundColor: colors.successSoft,
+  },
+  balanceBoxDebt: {
+    backgroundColor: colors.dangerSoft,
+  },
+  balanceLabel: {
+    ...typography.bodyStrong,
+  },
+  balanceValue: {
+    ...typography.title,
+    flexShrink: 1,
+    textAlign: 'right',
+  },
+  balanceTextOk: {
+    color: colors.success,
+  },
+  balanceTextDebt: {
+    color: colors.danger,
+  },
+
+  statRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  resetButton: {
+    marginBottom: spacing.xl,
+  },
+
+  row: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
-  consumptionInfo: {
+  rowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  rowTexts: {
     flex: 1,
-    marginRight: 10,
+    minWidth: 0,
   },
-  consumptionDrink: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
-    marginBottom: 4,
+  rowTitle: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
   },
-  consumptionDate: {
-    fontSize: 14,
-    color: '#8E8E93',
+  rowMeta: {
+    ...typography.small,
+    fontWeight: '400',
+    color: colors.textMuted,
+    marginTop: 1,
   },
-  consumptionPrice: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
+  rowPrice: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+    flexShrink: 0,
   },
-  deleteConsumptionButton: {
-    padding: 5,
+  rowDelete: {
+    width: 36,
+    height: 36,
   },
 });

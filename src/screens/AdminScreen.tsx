@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Alert, StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore, ValidationError } from '../state/appStore';
-import { colors, radius, spacing } from '../theme';
+import { colors, spacing, typography } from '../theme';
 import type { UserProfile } from '../domain/schemas';
+import { Button, Card, Screen } from '../components/ui';
 import { useAdminPin } from '../features/admin/useAdminPin';
 import { PinGate } from '../features/admin/PinGate';
 import { AdminHeader } from '../features/admin/AdminHeader';
@@ -14,7 +13,6 @@ import { DatabaseStatusCard } from '../features/admin/DatabaseStatusCard';
 import { UserManagementSection } from '../features/admin/UserManagementSection';
 import { DrinkManagementSection } from '../features/admin/DrinkManagementSection';
 import { TwintSection } from '../features/admin/TwintSection';
-import { adminStyles } from '../features/admin/adminStyles';
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ValidationError ? error.message : fallback;
@@ -88,7 +86,7 @@ export const AdminScreen: React.FC = () => {
     }, [isAuthenticated, loadData])
   );
 
-  // Falls der gerade ausgewählte TWINT-User zwischenzeitlich gelöscht wurde, Overlay schließen.
+  // Falls der gerade ausgewählte TWINT-User zwischenzeitlich gelöscht wurde, Modal schließen.
   useEffect(() => {
     if (twintPaymentUser && !users.some((u) => u.id === twintPaymentUser.id)) {
       setTwintPaymentUser(null);
@@ -99,7 +97,6 @@ export const AdminScreen: React.FC = () => {
     try {
       await addUser(input);
       await refreshAdminStatus();
-      Alert.alert('Erfolg', 'Benutzer wurde hinzugefügt.');
     } catch (error) {
       console.error('Fehler beim Hinzufügen des Benutzers:', error);
       Alert.alert('Fehler', errorMessage(error, 'Benutzer konnte nicht hinzugefügt werden.'));
@@ -111,7 +108,6 @@ export const AdminScreen: React.FC = () => {
     try {
       await addDrink(input);
       await refreshAdminStatus();
-      Alert.alert('Erfolg', 'Getränk wurde hinzugefügt.');
     } catch (error) {
       console.error('Fehler beim Hinzufügen des Getränks:', error);
       Alert.alert('Fehler', errorMessage(error, 'Getränk konnte nicht hinzugefügt werden.'));
@@ -119,39 +115,50 @@ export const AdminScreen: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = (userId: string) =>
-    confirmDestructive('Benutzer löschen', 'Möchten Sie diesen Benutzer wirklich löschen?', 'Löschen', async () => {
-      try {
-        await deleteUser(userId);
-        await refreshAdminStatus();
-        Alert.alert('Erfolg', 'Benutzer wurde gelöscht.');
-      } catch (error) {
-        console.error('Fehler beim Löschen des Benutzers:', error);
-        Alert.alert('Fehler', 'Benutzer konnte nicht gelöscht werden.');
+  const handleDeleteUser = (userId: string) => {
+    const user = users.find((u) => u.id === userId);
+    confirmDestructive(
+      'Benutzer löschen',
+      `${user?.name ?? 'Diesen Benutzer'} und alle zugehörigen Buchungen unwiderruflich löschen?`,
+      'Löschen',
+      async () => {
+        try {
+          await deleteUser(userId);
+          await refreshAdminStatus();
+        } catch (error) {
+          console.error('Fehler beim Löschen des Benutzers:', error);
+          Alert.alert('Fehler', 'Benutzer konnte nicht gelöscht werden.');
+        }
       }
-    });
+    );
+  };
 
-  const handleDeleteDrink = (drinkId: string) =>
-    confirmDestructive('Getränk löschen', 'Möchten Sie dieses Getränk wirklich löschen?', 'Löschen', async () => {
-      try {
-        await deleteDrink(drinkId);
-        await refreshAdminStatus();
-        Alert.alert('Erfolg', 'Getränk wurde gelöscht.');
-      } catch (error) {
-        console.error('Fehler beim Löschen des Getränks:', error);
-        Alert.alert('Fehler', 'Getränk konnte nicht gelöscht werden.');
+  const handleDeleteDrink = (drinkId: string) => {
+    const drink = drinks.find((d) => d.id === drinkId);
+    confirmDestructive(
+      'Getränk löschen',
+      `${drink?.name ?? 'Dieses Getränk'} aus dem Sortiment entfernen?`,
+      'Löschen',
+      async () => {
+        try {
+          await deleteDrink(drinkId);
+          await refreshAdminStatus();
+        } catch (error) {
+          console.error('Fehler beim Löschen des Getränks:', error);
+          Alert.alert('Fehler', 'Getränk konnte nicht gelöscht werden.');
+        }
       }
-    });
+    );
+  };
 
   const handleResetAllData = () =>
     confirmDestructive(
       'Alle Daten zurücksetzen',
-      'Möchten Sie wirklich alle Daten zurücksetzen? Dies kann nicht rückgängig gemacht werden!',
+      'Alle Benutzer, Getränke und Buchungen werden gelöscht und durch Demo-Daten ersetzt. Das kann nicht rückgängig gemacht werden.',
       'Zurücksetzen',
       async () => {
         try {
           await resetDemoData();
-          Alert.alert('Erfolg', 'Alle Daten wurden zurückgesetzt.');
         } catch (error) {
           console.error('Fehler beim Zurücksetzen der Daten:', error);
           Alert.alert('Fehler', 'Daten konnten nicht zurückgesetzt werden.');
@@ -165,66 +172,58 @@ export const AdminScreen: React.FC = () => {
   };
 
   if (!isAuthenticated) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <PinGate isPinReady={isPinReady} onSubmit={verifyPin} />
-      </SafeAreaView>
-    );
+    return <PinGate isPinReady={isPinReady} onSubmit={verifyPin} />;
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
-        <AdminHeader isRefreshing={isHydrating} onRefresh={loadData} onLogout={logout} />
+    <Screen>
+      <AdminHeader isRefreshing={isHydrating} onRefresh={() => void loadData()} onLogout={logout} />
 
-        <DatabaseStatusCard dbStatus={dbStatus} userCount={users.length} drinkCount={drinks.length} />
+      <DatabaseStatusCard dbStatus={dbStatus} userCount={users.length} drinkCount={drinks.length} />
 
-        <UserManagementSection
-          users={users}
-          onAddUser={handleAddUser}
-          onDeleteUser={handleDeleteUser}
-          onRequestTwintPayment={setTwintPaymentUser}
+      <UserManagementSection
+        users={users}
+        onAddUser={handleAddUser}
+        onDeleteUser={handleDeleteUser}
+        onRequestTwintPayment={setTwintPaymentUser}
+      />
+
+      <DrinkManagementSection drinks={drinks} onAddDrink={handleAddDrink} onDeleteDrink={handleDeleteDrink} />
+
+      <TwintSection
+        paymentUser={twintPaymentUser}
+        onClosePayment={() => setTwintPaymentUser(null)}
+        onPaymentRequestSent={handleTwintPaymentRequestSent}
+      />
+
+      <Card style={styles.dangerZone}>
+        <Text style={styles.dangerTitle}>Gefahrenzone</Text>
+        <Text style={styles.dangerText}>Setzt alle Daten auf den Auslieferungszustand mit Demo-Daten zurück.</Text>
+        <Button
+          label="Alle Daten zurücksetzen"
+          icon="restart-alt"
+          variant="dangerSoft"
+          onPress={handleResetAllData}
+          fullWidth
         />
-
-        <DrinkManagementSection drinks={drinks} onAddDrink={handleAddDrink} onDeleteDrink={handleDeleteDrink} />
-
-        <TwintSection
-          paymentUser={twintPaymentUser}
-          onClosePayment={() => setTwintPaymentUser(null)}
-          onPaymentRequestSent={handleTwintPaymentRequestSent}
-        />
-
-        <View style={adminStyles.sectionContainer}>
-          <TouchableOpacity style={styles.resetButton} onPress={handleResetAllData}>
-            <MaterialIcons name="refresh" size={24} color={colors.danger} />
-            <Text style={styles.resetButtonText}>Alle Daten zurücksetzen</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      </Card>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
+  dangerZone: {
+    borderWidth: 1,
+    borderColor: colors.dangerSoft,
+    gap: spacing.sm,
   },
-  content: {
-    flex: 1,
-    padding: spacing.lg,
-  },
-  resetButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceDanger,
-    padding: spacing.lg,
-    borderRadius: radius.sm,
-    gap: spacing.md,
-  },
-  resetButtonText: {
+  dangerTitle: {
+    ...typography.heading,
     color: colors.danger,
-    fontWeight: '600',
-    fontSize: 16,
+  },
+  dangerText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
   },
 });

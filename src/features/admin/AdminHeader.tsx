@@ -1,7 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../../theme';
+import { StyleSheet, View } from 'react-native';
+import { IconButton, SectionHeader } from '../../components/ui';
+import { spacing } from '../../theme';
 
 type Props = {
   isRefreshing: boolean;
@@ -10,51 +10,27 @@ type Props = {
 };
 
 export const AdminHeader: React.FC<Props> = ({ isRefreshing, onRefresh, onLogout }) => (
-  <View style={styles.header}>
-    <Text style={styles.headerTitle}>Admin-Bereich</Text>
-    <View style={styles.headerButtons}>
-      <TouchableOpacity
-        style={[styles.refreshButton, isRefreshing && styles.refreshButtonActive]}
-        onPress={onRefresh}
-        disabled={isRefreshing}
-        accessibilityLabel="Daten aktualisieren"
-      >
-        <MaterialIcons name="refresh" size={24} color={colors.primary} />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.logoutButton} onPress={onLogout} accessibilityLabel="Abmelden">
-        <MaterialIcons name="logout" size={24} color={colors.danger} />
-      </TouchableOpacity>
-    </View>
-  </View>
+  <SectionHeader
+    title="Verwaltung"
+    subtitle="Benutzer, Getränke und TWINT"
+    action={
+      <View style={styles.actions}>
+        <IconButton
+          icon="refresh"
+          tone="primary"
+          onPress={onRefresh}
+          disabled={isRefreshing}
+          accessibilityLabel="Daten aktualisieren"
+        />
+        <IconButton icon="logout" tone="danger" onPress={onLogout} accessibilityLabel="Abmelden" />
+      </View>
+    }
+  />
 );
 
 const styles = StyleSheet.create({
-  header: {
+  actions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.textStrong,
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  refreshButton: {
-    padding: spacing.sm,
-    borderRadius: radius.sm,
-    backgroundColor: colors.background,
-  },
-  refreshButtonActive: {
-    backgroundColor: colors.surfaceActive,
-  },
-  logoutButton: {
-    padding: spacing.sm,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surfaceDanger,
+    gap: spacing.sm,
   },
 });
