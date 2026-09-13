@@ -1,8 +1,19 @@
-<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1024" height="1024" rx="200" fill="#00D4AA"/>
-  <circle cx="512" cy="400" r="120" fill="white"/>
-  <rect x="400" y="520" width="224" height="200" rx="20" fill="white"/>
-  <rect x="450" y="540" width="124" height="160" rx="10" fill="#00D4AA"/>
-  <rect x="590" y="540" width="124" height="160" rx="10" fill="#00D4AA"/>
-  <circle cx="512" cy="720" r="40" fill="white"/>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Android Adaptive Icon Vordergrund: transparent, Motiv in der sicheren Zone (innere 66 %) -->
+  <g transform="translate(512 512) scale(0.72) translate(-512 -512)">
+    <g fill="#FFFFFF">
+      <rect x="292" y="420" width="360" height="400" rx="48"/>
+      <path d="M652 500 H730 A80 80 0 0 1 810 580 V680 A80 80 0 0 1 730 760 H652 V690 H720 A20 20 0 0 0 740 670 V590 A20 20 0 0 0 720 570 H652 Z"/>
+      <circle cx="350" cy="420" r="78"/>
+      <circle cx="450" cy="370" r="98"/>
+      <circle cx="565" cy="380" r="92"/>
+      <circle cx="640" cy="440" r="70"/>
+      <rect x="292" y="400" width="360" height="60"/>
+    </g>
+    <g fill="#00D4AA" opacity="0.28">
+      <rect x="352" y="520" width="44" height="240" rx="22"/>
+      <rect x="450" y="520" width="44" height="240" rx="22"/>
+      <rect x="548" y="520" width="44" height="240" rx="22"/>
+    </g>
+  </g>
 </svg>
