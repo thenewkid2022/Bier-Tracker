@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,77 +9,69 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { DatabaseService } from '../services/DatabaseService';
+import { useAppStore } from '../state/appStore';
 import { useFocusEffect } from '@react-navigation/native';
 
 export const ProfileScreen: React.FC = () => {
-  const [users, setUsers] = useState<any[]>([]);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [consumptions, setConsumptions] = useState<any[]>([]);
-  const [totalSpent, setTotalSpent] = useState(0);
+  const {
+    users,
+    selectedUserId,
+    profileConsumptions,
+    profileTotalSpent,
+    hydrate,
+    loadProfile,
+    resetBalance: resetBalanceAction,
+    deleteConsumption: deleteConsumptionAction,
+  } =
+    useAppStore((s) => ({
+      users: s.users,
+      selectedUserId: s.selectedUserId,
+      profileConsumptions: s.profileConsumptions,
+      profileTotalSpent: s.profileTotalSpent,
+      hydrate: s.hydrate,
+      loadProfile: s.loadProfile,
+      resetBalance: s.resetBalance,
+      deleteConsumption: s.deleteConsumption,
+    }));
 
-  const dbService = DatabaseService.getInstance();
+  const selectedUser = selectedUserId ? users.find((u) => u.id === selectedUserId) ?? null : null;
+  const consumptions = profileConsumptions;
+  const totalSpent = profileTotalSpent;
 
   useEffect(() => {
-    loadUsers();
+    hydrate().catch((error) => console.error('Fehler beim Hydraten:', error));
   }, []);
 
   // Daten neu laden, wenn der Screen fokussiert wird
   useFocusEffect(
     React.useCallback(() => {
-      // Benutzerliste und aktuelle Benutzerdaten neu laden
-      loadUsers();
-    }, [])
+      const run = async () => {
+        try {
+          if (selectedUserId) {
+            await loadProfile(selectedUserId);
+          } else {
+            await hydrate();
+          }
+        } catch (error) {
+          console.error('Fehler beim Laden des Profils:', error);
+        }
+      };
+      run();
+    }, [selectedUserId])
   );
 
   const loadUsers = async () => {
-    try {
-      const usersData = await dbService.getAllUserProfiles();
-      setUsers(usersData);
-      
-      if (usersData.length > 0) {
-        // Aktuellen Benutzer beibehalten, falls er noch existiert
-        if (selectedUser && usersData.find(u => u.id === selectedUser.id)) {
-          // Aktuellen Benutzer aktualisieren und Daten neu laden
-          const updatedUser = usersData.find(u => u.id === selectedUser.id);
-          setSelectedUser(updatedUser);
-          await loadUserData(updatedUser.id);
-        } else if (!selectedUser) {
-          // Standardmäßig den ersten Benutzer auswählen
-          setSelectedUser(usersData[0]);
-          await loadUserData(usersData[0].id);
-        }
-      } else {
-        // Keine Benutzer vorhanden
-        setSelectedUser(null);
-        setConsumptions([]);
-        setTotalSpent(0);
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden der Benutzer:', error);
-      Alert.alert('Fehler', 'Benutzer konnten nicht geladen werden.');
+    await hydrate();
+    if (selectedUserId) {
+      await loadProfile(selectedUserId);
     }
   };
 
   const loadUserData = async (userId: string) => {
-    try {
-      const userData = await dbService.getUserProfile(userId);
-      if (userData) {
-        setSelectedUser(userData);
-        const userConsumptions = await dbService.getConsumptionsWithDrinkInfo(userId);
-        setConsumptions(userConsumptions);
-        
-        const total = userConsumptions.reduce((sum, c) => sum + c.price, 0);
-        setTotalSpent(total);
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden der Benutzerdaten:', error);
-      Alert.alert('Fehler', 'Benutzerdaten konnten nicht geladen werden.');
-    }
+    await loadProfile(userId);
   };
 
   const handleUserSelect = async (user: any) => {
-    setSelectedUser(user);
     await loadUserData(user.id);
   };
 
@@ -96,14 +88,7 @@ export const ProfileScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              const updatedUser = { ...selectedUser, balance: 0, monthlyCount: 0 };
-              await dbService.saveUserProfile(updatedUser);
-              setSelectedUser(updatedUser);
-              
-              // UI aktualisieren
-              const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
-              setUsers(updatedUsers);
-              
+              await resetBalanceAction(selectedUser.id);
               Alert.alert('Erfolg', 'Balance wurde zurückgesetzt.');
             } catch (error) {
               console.error('Fehler beim Zurücksetzen der Balance:', error);
@@ -126,15 +111,10 @@ export const ProfileScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await dbService.deleteConsumption(consumptionId);
-              // UI aktualisieren
-              const updatedConsumptions = consumptions.filter(c => c.id !== consumptionId);
-              setConsumptions(updatedConsumptions);
-              
-              // Gesamtausgaben neu berechnen
-              const total = updatedConsumptions.reduce((sum, c) => sum + c.price, 0);
-              setTotalSpent(total);
-              
+              await deleteConsumptionAction(consumptionId);
+              if (selectedUser) {
+                await loadUserData(selectedUser.id);
+              }
               Alert.alert('Erfolg', 'Einkauf wurde gelöscht.');
             } catch (error) {
               console.error('Fehler beim Löschen des Einkaufs:', error);

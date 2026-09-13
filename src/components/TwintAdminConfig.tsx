@@ -8,9 +8,11 @@ import {
   Alert,
   Modal,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TwintService } from '../services/TwintService';
+import { getPlatformStyle, isAndroid } from '../utils/platformStyles';
 
 interface TwintAdminConfigProps {
   isVisible: boolean;
@@ -40,7 +42,7 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
 
   const loadCurrentConfig = async () => {
     try {
-      const config = twintService.getAdminConfig();
+      const config = await twintService.getAdminConfig();
       console.log('Geladene TWINT-Konfiguration:', config); // Debug-Log
       setIban(config?.iban || '');
       setPhoneNumber(config?.phoneNumber || '');
@@ -230,37 +232,6 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
               </Text>
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Standard-Nachricht</Text>
-              <TextInput
-                style={styles.input}
-                value={defaultMessage}
-                onChangeText={setDefaultMessage}
-                placeholder="Getränke Tracker"
-                maxLength={140}
-              />
-              <Text style={styles.inputHint}>
-                Wird allen Zahlungsanfragen vorangestellt. Max. 140 Zeichen.
-              </Text>
-              <Text style={styles.characterCount}>
-                {defaultMessage.length}/140 Zeichen
-              </Text>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Anzeigename</Text>
-              <TextInput
-                style={styles.input}
-                value={merchantName}
-                onChangeText={setMerchantName}
-                placeholder="Ihr Name"
-                maxLength={50}
-              />
-              <Text style={styles.inputHint}>
-                Wird in der App als Admin angezeigt.
-              </Text>
-            </View>
-
             <View style={styles.infoContainer}>
               <MaterialIcons name="info" size={20} color="#007AFF" />
               <Text style={styles.infoText}>
@@ -305,13 +276,22 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   modalContent: {
+    ...getPlatformStyle('modal'),
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: isAndroid ? 8 : 16,
     padding: 20,
     width: '90%',
     maxWidth: 500,
     height: '90%',
     zIndex: 1001,
+    shadowColor: isAndroid ? undefined : '#000',
+    shadowOffset: isAndroid ? undefined : {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: isAndroid ? undefined : 0.25,
+    shadowRadius: isAndroid ? undefined : 10,
+    elevation: isAndroid ? 24 : 5,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -353,12 +333,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
+    ...getPlatformStyle('card'),
     backgroundColor: '#F8F9FA',
     borderWidth: 1,
     borderColor: '#E5E5EA',
-    borderRadius: 8,
+    borderRadius: isAndroid ? 4 : 8,
     padding: 12,
     fontSize: 16,
+    minHeight: isAndroid ? 48 : undefined,
   },
   inputHint: {
     fontSize: 12,
@@ -389,43 +371,56 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 6,
     marginTop: 20,
+    paddingHorizontal: 0,
   },
   resetButton: {
+    ...getPlatformStyle('button'),
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFE5E5',
-    padding: 12,
-    borderRadius: 8,
-    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: isAndroid ? 4 : 6,
+    gap: 4,
+    minHeight: isAndroid ? 48 : 36,
+    justifyContent: 'center',
+    flex: 1,
   },
   resetButtonText: {
     color: '#FF3B30',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: isAndroid ? 14 : 11,
   },
   cancelButton: {
-    flex: 1,
+    ...getPlatformStyle('button'),
     backgroundColor: '#8E8E93',
-    padding: 16,
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: isAndroid ? 4 : 6,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: isAndroid ? 48 : 36,
+    flex: 1,
   },
   cancelButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: isAndroid ? 14 : 11,
   },
   saveButton: {
-    flex: 1,
+    ...getPlatformStyle('button'),
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#00D4AA',
-    padding: 16,
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: isAndroid ? 4 : 6,
     justifyContent: 'center',
-    gap: 8,
+    gap: 4,
+    minHeight: isAndroid ? 48 : 36,
+    flex: 1,
   },
   saveButtonDisabled: {
     opacity: 0.6,
@@ -433,6 +428,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: isAndroid ? 14 : 11,
   },
 });

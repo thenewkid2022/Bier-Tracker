@@ -38,7 +38,7 @@ export class NotificationService {
     title: string;
     body: string;
     data?: Record<string, any>;
-    trigger?: Notifications.NotificationTriggerInput;
+    trigger?: Notifications.NotificationTriggerInput | null;
   }): Promise<string> {
     return await Notifications.scheduleNotificationAsync({
       content: {
@@ -46,7 +46,7 @@ export class NotificationService {
         body,
         data,
       },
-      trigger,
+      trigger: trigger ?? null,
     });
   }
 

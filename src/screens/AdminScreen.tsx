@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,18 +10,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import * as SecureStore from 'expo-secure-store';
 import { DatabaseService } from '../services/DatabaseService';
 import { TwintPaymentRequest } from '../components/TwintPaymentRequest';
 import { TwintAdminConfig } from '../components/TwintAdminConfig';
 import { DrinkIcon } from '../components/DrinkIcon';
+import { useAppStore } from '../state/appStore';
 // Einfache ID-Generierung ohne externe Abhängigkeiten
 const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
 export const AdminScreen: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinCode, setPinCode] = useState('');
-  const [users, setUsers] = useState<any[]>([]);
-  const [drinks, setDrinks] = useState<any[]>([]);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showAddDrink, setShowAddDrink] = useState(false);
   const [newUserName, setNewUserName] = useState('');
@@ -30,15 +31,38 @@ export const AdminScreen: React.FC = () => {
   const [newDrinkPrice, setNewDrinkPrice] = useState('');
   const [newDrinkStock, setNewDrinkStock] = useState('');
   const [newDrinkIcon, setNewDrinkIcon] = useState('beer');
-  const [dbStatus, setDbStatus] = useState<any>(null);
   const [showTwintConfig, setShowTwintConfig] = useState(false);
   const [showTwintModal, setShowTwintModal] = useState(false);
   const [selectedUserForTwint, setSelectedUserForTwint] = useState<any>(null);
 
-  // Standard PIN-Code: 1234 (kann später geändert werden)
-  const ADMIN_PIN = '1234';
+  const [adminPin, setAdminPin] = useState<string | null>(null);
 
   const dbService = DatabaseService.getInstance();
+  const {
+    users,
+    drinks,
+    dbStatus,
+    isHydrating,
+    hydrate,
+    refreshAdminStatus,
+    deleteUser: deleteUserAction,
+    deleteDrink: deleteDrinkAction,
+    resetDemoData: resetDemoDataAction,
+  } = useAppStore((s) => ({
+    users: s.users,
+    drinks: s.drinks,
+    dbStatus: s.dbStatus,
+    isHydrating: s.isHydrating,
+    hydrate: s.hydrate,
+    refreshAdminStatus: s.refreshAdminStatus,
+    deleteUser: s.deleteUser,
+    deleteDrink: s.deleteDrink,
+    resetDemoData: s.resetDemoData,
+  }));
+
+  useEffect(() => {
+    loadOrCreatePin();
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -46,8 +70,28 @@ export const AdminScreen: React.FC = () => {
     }
   }, [isAuthenticated]);
 
+  const loadOrCreatePin = async () => {
+    const storedPin = await SecureStore.getItemAsync('admin_pin');
+    if (storedPin) {
+      setAdminPin(storedPin);
+      return;
+    }
+    const defaultPin = '1234';
+    await SecureStore.setItemAsync('admin_pin', defaultPin);
+    setAdminPin(defaultPin);
+  };
+
+  // Aktualisiere Daten, wenn der Screen fokussiert wird
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) {
+        loadData();
+      }
+    }, [isAuthenticated])
+  );
+
   const handlePinSubmit = () => {
-    if (pinCode === ADMIN_PIN) {
+    if (adminPin && pinCode === adminPin) {
       setIsAuthenticated(true);
       setPinCode('');
     } else {
@@ -63,14 +107,8 @@ export const AdminScreen: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const [usersData, drinksData, statusData] = await Promise.all([
-        dbService.getAllUserProfiles(),
-        dbService.getAllDrinks(),
-        dbService.getDatabaseStatus(),
-      ]);
-      setUsers(usersData);
-      setDrinks(drinksData);
-      setDbStatus(statusData);
+      await hydrate();
+      await refreshAdminStatus();
     } catch (error) {
       console.error('Fehler beim Laden der Daten:', error);
     }
@@ -165,10 +203,8 @@ export const AdminScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await dbService.deleteUser(userId);
-              // UI aktualisieren
-              const updatedUsers = users.filter(u => u.id !== userId);
-              setUsers(updatedUsers);
+              await deleteUserAction(userId);
+              await loadData();
               Alert.alert('Erfolg', 'Benutzer wurde gelöscht.');
             } catch (error) {
               console.error('Fehler beim Löschen des Benutzers:', error);
@@ -191,10 +227,8 @@ export const AdminScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await dbService.deleteDrink(drinkId);
-              // UI aktualisieren
-              const updatedDrinks = drinks.filter(d => d.id !== drinkId);
-              setDrinks(updatedDrinks);
+              await deleteDrinkAction(drinkId);
+              await loadData();
               Alert.alert('Erfolg', 'Getränk wurde gelöscht.');
             } catch (error) {
               console.error('Fehler beim Löschen des Getränks:', error);
@@ -217,8 +251,7 @@ export const AdminScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await dbService.resetMockData();
-              await loadData();
+              await resetDemoDataAction();
               Alert.alert('Erfolg', 'Alle Daten wurden zurückgesetzt.');
             } catch (error) {
               console.error('Fehler beim Zurücksetzen der Daten:', error);
@@ -273,7 +306,7 @@ export const AdminScreen: React.FC = () => {
               <Text style={styles.loginButtonText}>Anmelden</Text>
             </TouchableOpacity>
             
-            <Text style={styles.pinHint}>Standard PIN: 1234</Text>
+            <Text style={styles.pinHint}>PIN in Secure Store gespeichert</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -287,9 +320,18 @@ export const AdminScreen: React.FC = () => {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Admin-Bereich</Text>
           <View style={styles.headerButtons}>
-            <TouchableOpacity style={styles.refreshButton} onPress={loadData}>
-              <MaterialIcons name="refresh" size={24} color="#007AFF" />
-            </TouchableOpacity>
+                         <TouchableOpacity 
+              style={[styles.refreshButton, isHydrating && styles.refreshButtonActive]} 
+              onPress={loadData}
+              disabled={isHydrating}
+             >
+               <MaterialIcons 
+                 name="refresh" 
+                 size={24} 
+                 color="#007AFF" 
+                 style={isHydrating && styles.rotatingIcon}
+               />
+             </TouchableOpacity>
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
               <MaterialIcons name="logout" size={24} color="#FF3B30" />
             </TouchableOpacity>
@@ -377,9 +419,9 @@ export const AdminScreen: React.FC = () => {
                   <Text style={styles.balanceLabel}>Offener Betrag</Text>
                   <Text style={[
                     styles.balanceAmount,
-                    user.balance > 0 && styles.balanceAmountPositive
+                    user.balance < 0 && styles.balanceAmountPositive
                   ]}>
-                    CHF {user.balance.toFixed(2)}
+                    CHF {Math.abs(user.balance).toFixed(2)}
                   </Text>
                 </View>
               </View>
@@ -392,7 +434,7 @@ export const AdminScreen: React.FC = () => {
                   </Text>
                 </View>
                 
-                {user.balance > 0 && (
+                {user.balance < 0 && (
                   <View style={styles.userCardStat}>
                     <MaterialIcons name="payment" size={16} color="#34C759" />
                     <Text style={styles.userCardStatText}>
@@ -402,32 +444,28 @@ export const AdminScreen: React.FC = () => {
                 )}
               </View>
 
-              <View style={styles.userCardActions}>
-                {user.balance > 0 && (
-                  <TouchableOpacity
-                    style={styles.twintButton}
-                    onPress={() => {
-                      // TWINT-Modal öffnen
-                      const twintComponent = (
-                        <TwintPaymentRequest
-                          userId={user.id}
-                          userName={user.name}
-                          currentBalance={user.balance}
-                          onPaymentRequestSent={(amount, message) => 
-                            handleTwintPaymentRequest(user.id, amount, message)
-                          }
-                        />
-                      );
-                      // Hier würden wir das Modal öffnen
-                      // Für jetzt öffnen wir es direkt
-                      setShowTwintModal(true);
-                      setSelectedUserForTwint(user);
-                    }}
-                  >
-                    <MaterialIcons name="payment" size={18} color="#FFFFFF" />
-                    <Text style={styles.twintButtonText}>TWINT Zahlung</Text>
-                  </TouchableOpacity>
-                )}
+                             <View style={styles.userCardActions}>
+                 {/* TWINT-Button */}
+                <TouchableOpacity
+                                     style={[
+                     styles.twintButton,
+                     user.balance < 0 && styles.twintButtonActive,
+                     user.balance >= 0 && styles.twintButtonDisabled
+                   ]}
+                                     onPress={() => {
+                     if (user.balance < 0) {
+                       setShowTwintModal(true);
+                       setSelectedUserForTwint(user);
+                     } else {
+                       Alert.alert('Info', `Kein offener Betrag. Balance: ${user.balance} CHF`);
+                     }
+                   }}
+                >
+                  <MaterialIcons name="payment" size={18} color="#FFFFFF" />
+                                     <Text style={styles.twintButtonText}>
+                     TWINT Zahlung {user.balance < 0 ? `(${Math.abs(user.balance).toFixed(2)} CHF)` : '(0 CHF)'}
+                   </Text>
+                </TouchableOpacity>
                 
                 <TouchableOpacity
                   style={styles.deleteButton}
@@ -601,10 +639,12 @@ export const AdminScreen: React.FC = () => {
                 userId={selectedUserForTwint.id}
                 userName={selectedUserForTwint.name}
                 currentBalance={selectedUserForTwint.balance}
-                onPaymentRequestSent={(amount, message) => {
-                  handleTwintPaymentRequest(selectedUserForTwint.id, amount, message);
-                  setShowTwintModal(false);
-                }}
+                                 onPaymentRequestSent={async (amount, message) => {
+                   await handleTwintPaymentRequest(selectedUserForTwint.id, amount, message);
+                   setShowTwintModal(false);
+                   // Daten nach TWINT-Zahlungsanfrage neu laden
+                   await loadData();
+                 }}
               />
             </View>
           </View>
@@ -715,6 +755,12 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     backgroundColor: '#F2F2F7',
+  },
+  refreshButtonActive: {
+    backgroundColor: '#E5F3FF',
+  },
+  rotatingIcon: {
+    transform: [{ rotate: '360deg' }],
   },
   logoutButton: {
     padding: 8,
@@ -890,7 +936,7 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   balanceAmountPositive: {
-    color: '#34C759',
+    color: '#FF3B30',
   },
   userCardDetails: {
     flexDirection: 'row',
@@ -924,6 +970,13 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 14,
+  },
+  twintButtonActive: {
+    backgroundColor: '#00D4AA', // TWINT-Grün
+  },
+  twintButtonDisabled: {
+    backgroundColor: '#8E8E93', // Grau
+    opacity: 0.6,
   },
   deleteButton: {
     flexDirection: 'row',

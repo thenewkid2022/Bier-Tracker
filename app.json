@@ -5,13 +5,20 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "icon": "./assets/adaptive-icon.png",
+    "splash": {
+      "image": "./assets/adaptive-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#00D4AA"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thenewkid2022.bierlounge-tracker",
-      "buildNumber": "2",
+      "buildNumber": "6",
       "infoPlist": {
         "NSUserNotificationUsageDescription": "Diese App verwendet Benachrichtigungen, um Sie über Ihre Getränke-Einkäufe zu informieren.",
         "NSCameraUsageDescription": "Diese App benötigt Zugriff auf die Kamera für QR-Code-Scans.",
@@ -22,28 +29,32 @@
           {
             "CFBundleURLName": "Getränke Tracker Payment Return",
             "CFBundleURLSchemes": [
-              "bierlounge-tracker"
-            ]
-          },
-          {
-            "CFBundleURLName": "TWINT Payment",
-            "CFBundleURLSchemes": [
-              "twint"
+              "getraenke-tracker"
             ]
           }
         ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-    "scheme": "bierlounge-tracker",
-    "plugins": [],
+    "android": {
+      "package": "com.ragnarus.getraenketracker",
+      "versionCode": 6,
+      "backgroundColor": "#00D4AA"
+    },
+    "scheme": "getraenke-tracker",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-notifications"
+    ],
     "extra": {
       "eas": {
         "projectId": "4c2cd3f1-77ff-4932-8bbe-6d0d0e5d3435"
       }
     },
     "platforms": [
-      "ios"
+      "ios",
+      "android"
     ],
     "owner": "ragnarus"
   }

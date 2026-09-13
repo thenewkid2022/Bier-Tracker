@@ -1,6 +1,8 @@
 // TWINT-Service für Zahlungsanfragen
 import * as Linking from 'expo-linking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { DatabaseService } from './DatabaseService';
 
 interface TwintAdminConfig {
   iban?: string;
@@ -9,12 +11,18 @@ interface TwintAdminConfig {
   merchantName?: string;
 }
 
+const APP_SCHEME = 'getraenke-tracker';
+const TWINT_CONFIG_KEY = 'twint_admin_config';
+const TWINT_IBAN_KEY = 'twint_admin_iban';
+
 export class TwintService {
   private static instance: TwintService;
   private adminConfig: TwintAdminConfig = {};
+  private readonly dbService = DatabaseService.getInstance();
+  private readonly ready: Promise<void>;
 
   private constructor() {
-    this.loadAdminConfig();
+    this.ready = this.loadAdminConfig();
   }
 
   public static getInstance(): TwintService {
@@ -27,9 +35,14 @@ export class TwintService {
   // Admin-Konfiguration laden
   private async loadAdminConfig() {
     try {
-      const config = await AsyncStorage.getItem('twint_admin_config');
+      const [config, iban] = await Promise.all([
+        AsyncStorage.getItem(TWINT_CONFIG_KEY),
+        SecureStore.getItemAsync(TWINT_IBAN_KEY),
+      ]);
       if (config) {
-        this.adminConfig = JSON.parse(config);
+        this.adminConfig = { ...JSON.parse(config), iban: iban ?? undefined };
+      } else if (iban) {
+        this.adminConfig = { iban };
       }
     } catch (error) {
       console.error('Fehler beim Laden der TWINT-Admin-Konfiguration:', error);
@@ -39,8 +52,19 @@ export class TwintService {
   // Admin-Konfiguration speichern
   async saveAdminConfig(config: TwintAdminConfig): Promise<void> {
     try {
+      await this.ready;
       this.adminConfig = config;
-      await AsyncStorage.setItem('twint_admin_config', JSON.stringify(config));
+      const storagePayload = {
+        phoneNumber: config.phoneNumber,
+        defaultMessage: config.defaultMessage,
+        merchantName: config.merchantName,
+      };
+      await Promise.all([
+        AsyncStorage.setItem(TWINT_CONFIG_KEY, JSON.stringify(storagePayload)),
+        config.iban
+          ? SecureStore.setItemAsync(TWINT_IBAN_KEY, config.iban)
+          : SecureStore.deleteItemAsync(TWINT_IBAN_KEY),
+      ]);
     } catch (error) {
       console.error('Fehler beim Speichern der TWINT-Admin-Konfiguration:', error);
       throw error;
@@ -48,7 +72,8 @@ export class TwintService {
   }
 
   // Admin-Konfiguration abrufen
-  getAdminConfig(): TwintAdminConfig {
+  async getAdminConfig(): Promise<TwintAdminConfig> {
+    await this.ready;
     return { ...this.adminConfig };
   }
 
@@ -76,36 +101,44 @@ export class TwintService {
   // TWINT-App öffnen (falls installiert)
   async openTwintApp(amount: number, message: string = '', iban?: string): Promise<boolean> {
     try {
-      const paymentUrl = this.generatePaymentRequest(amount, message, iban);
+      // Verschiedene TWINT-URL-Formate versuchen
+      const twintUrls = [
+        // Standard TWINT-Format
+        `twint://pay?amount=${amount.toFixed(2)}&message=${encodeURIComponent(message)}`,
+        // Alternative Formate
+        `twint://pay?amount=${amount.toFixed(2)}&msg=${encodeURIComponent(message)}`,
+        `twint://pay?amount=${amount.toFixed(2)}&text=${encodeURIComponent(message)}`,
+        // Mit IBAN falls verfügbar
+        `twint://pay?amount=${amount.toFixed(2)}&message=${encodeURIComponent(message)}&iban=${encodeURIComponent(iban || this.adminConfig.iban || '')}`,
+        // Einfaches Format
+        `twint://pay?amount=${amount.toFixed(2)}`
+      ];
       
-      // Prüfen ob TWINT-App installiert ist
-      const canOpen = await Linking.canOpenURL(paymentUrl);
-      
-      if (canOpen) {
-        // TWINT-App öffnen
-        await Linking.openURL(paymentUrl);
-        return true;
-      } else {
-        // Fallback: TWINT im Browser öffnen
-        const webUrl = `https://www.twint.ch/pay?amount=${amount.toFixed(2)}&message=${encodeURIComponent(message)}`;
-        await Linking.openURL(webUrl);
-        return true;
+      // IBAN hinzufügen falls verfügbar
+      const useIban = iban || this.adminConfig.iban;
+      if (useIban) {
+        twintUrls.push(`twint://pay?amount=${amount.toFixed(2)}&message=${encodeURIComponent(message)}&iban=${encodeURIComponent(useIban)}`);
       }
+      
+      // Verschiedene URLs versuchen
+      for (const url of twintUrls) {
+        const canOpen = await Linking.canOpenURL(url);
+        if (canOpen) {
+          await Linking.openURL(url);
+          return true;
+        }
+      }
+      
+      throw new Error('Keine TWINT-URL funktioniert');
     } catch (error) {
       console.error('Fehler beim Öffnen der TWINT-App:', error);
       return false;
     }
   }
 
-  // Prüfen, ob TWINT-App installiert ist
+  // Prüfen, ob TWINT-App installiert ist (vereinfacht)
   async canOpenTwintApp(): Promise<boolean> {
-    try {
-      const testUrl = 'twint://pay?amount=1.00&message=test';
-      return await Linking.canOpenURL(testUrl);
-    } catch (error) {
-      console.error('Fehler beim Prüfen der TWINT-App:', error);
-      return false;
-    }
+    return Linking.canOpenURL('twint://');
   }
 
   // Zahlungsanfrage für einen Benutzer generieren (mit Admin-Daten)
@@ -121,7 +154,7 @@ export class TwintService {
     const message = `${defaultMessage} - ${description}`.trim();
     
     const paymentUrl = this.generatePaymentRequest(amount, message);
-    const deepLinkUrl = `bierlounge-tracker://payment-return?userId=${userId}&amount=${amount}&status=pending`;
+    const deepLinkUrl = `${APP_SCHEME}://payment-return?userId=${userId}&amount=${amount}&status=pending`;
     
     // Admin-Informationen für Anzeige
     const adminInfo = this.adminConfig.merchantName || 'Admin';
@@ -161,14 +194,14 @@ export class TwintService {
 
   // Deep Link für Zahlungsrückkehr generieren
   generatePaymentReturnLink(userId: string, amount: number, status: 'pending' | 'completed' | 'failed' = 'pending'): string {
-    return `bierlounge-tracker://payment-return?userId=${userId}&amount=${amount}&status=${status}`;
+    return `${APP_SCHEME}://payment-return?userId=${userId}&amount=${amount}&status=${status}`;
   }
 
   // Zahlungsstatus aus Deep Link extrahieren
   parsePaymentReturnLink(url: string): { userId?: string; amount?: number; status?: string } | null {
     try {
       const parsed = Linking.parse(url);
-      if (parsed.scheme === 'bierlounge-tracker' && parsed.hostname === 'payment-return') {
+      if (parsed.scheme === APP_SCHEME && parsed.hostname === 'payment-return') {
         const queryParams = parsed.queryParams;
         return {
           userId: queryParams?.userId ? String(queryParams.userId) : undefined,
@@ -181,5 +214,12 @@ export class TwintService {
       console.error('Fehler beim Parsen des Deep Links:', error);
       return null;
     }
+  }
+
+  async handleCompletedPayment(userId: string, amount: number): Promise<void> {
+    if (!userId || !this.validateAmount(amount)) {
+      return;
+    }
+    await this.dbService.applyPayment(userId, amount);
   }
 }

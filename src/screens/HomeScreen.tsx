@@ -7,26 +7,37 @@ import {
   TouchableOpacity,
   Alert,
   Dimensions,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { DrinkIcon } from '../components/DrinkIcon';
-import { DatabaseService } from '../services/DatabaseService';
+import { useAppStore } from '../state/appStore';
+import { getPlatformStyle, isAndroid } from '../utils/platformStyles';
 
 const { width } = Dimensions.get('window');
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export const HomeScreen: React.FC = () => {
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
-  const [drinks, setDrinks] = useState<any[]>([]);
+  const { users, drinks, selectedUserId, hydrate, selectUser, purchaseDrink, isHydrating } =
+    useAppStore((s) => ({
+      users: s.users,
+      drinks: s.drinks,
+      selectedUserId: s.selectedUserId,
+      hydrate: s.hydrate,
+      selectUser: s.selectUser,
+      purchaseDrink: s.purchaseDrink,
+      isHydrating: s.isHydrating,
+    }));
+  const selectedUser = selectedUserId ? users.find((u) => u.id === selectedUserId) ?? null : null;
   const [isWide, setIsWide] = useState(width >= 900);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const dbService = DatabaseService.getInstance();
+  const [quantityModalVisible, setQuantityModalVisible] = useState(false);
+  const [selectedDrink, setSelectedDrink] = useState<any>(null);
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
 
   useEffect(() => {
-    initializeApp();
+    hydrate().catch((error) => console.error('Fehler beim Hydraten der Daten:', error));
     const subscription = Dimensions.addEventListener('change', ({ window }) => {
       setIsWide(window.width >= 900);
     });
@@ -34,64 +45,8 @@ export const HomeScreen: React.FC = () => {
     return () => subscription?.remove();
   }, []);
 
-  // Daten neu laden, wenn der Screen wieder sichtbar wird
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refreshData();
-    }, 2000); // Alle 2 Sekunden aktualisieren
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const initializeApp = async () => {
-    try {
-      await loadInitialData();
-    } catch (error) {
-      console.error('Fehler beim Initialisieren der App:', error);
-    }
-  };
-
   const refreshData = async () => {
-    if (isRefreshing) return; // Verhindert mehrfache gleichzeitige Updates
-    
-    try {
-      setIsRefreshing(true);
-      const [usersData, drinksData] = await Promise.all([
-        dbService.getAllUserProfiles(),
-        dbService.getAllDrinks(),
-      ]);
-
-      setUsers(usersData);
-      setDrinks(drinksData);
-      
-      // Aktuellen Benutzer beibehalten, falls er noch existiert
-      if (selectedUser && !usersData.find(u => u.id === selectedUser.id)) {
-        setSelectedUser(usersData[0] || null);
-      }
-    } catch (error) {
-      console.error('Fehler beim Aktualisieren der Daten:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const loadInitialData = async () => {
-    try {
-      const [usersData, drinksData] = await Promise.all([
-        dbService.getAllUserProfiles(),
-        dbService.getAllDrinks(),
-      ]);
-
-      setUsers(usersData);
-      setDrinks(drinksData);
-
-      // Benutzer auswählen, falls vorhanden
-      if (usersData.length > 0) {
-        setSelectedUser(usersData[0]);
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden der Daten:', error);
-    }
+    await hydrate();
   };
 
   const handleDrinkPurchase = async (drink: any) => {
@@ -105,47 +60,39 @@ export const HomeScreen: React.FC = () => {
       return;
     }
 
+    // Modal für Mengenauswahl öffnen
+    setSelectedDrink(drink);
+    setSelectedQuantity(1);
+    setQuantityModalVisible(true);
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (!selectedDrink || !selectedUser) return;
+
+    const maxQuantity = Math.min(selectedDrink.stock, 10); // Maximal 10 Getränke auf einmal
+    const quantity = Math.min(selectedQuantity, maxQuantity);
+    const totalPrice = selectedDrink.price * quantity;
+
     try {
-      // Getränk kaufen
-      const updatedDrink = { ...drink, stock: drink.stock - 1 };
-      await dbService.saveDrink(updatedDrink);
+      const newBalance = selectedUser.balance - totalPrice;
+      const balanceMessage = newBalance < 0
+        ? `Ihr offener Betrag: CHF ${Math.abs(newBalance).toFixed(2)}`
+        : `Ihre Balance: CHF ${newBalance.toFixed(2)}`;
 
-      // Benutzer-Guthaben aktualisieren
-      const updatedUser = {
-        ...selectedUser,
-        balance: selectedUser.balance - drink.price,
-        monthlyCount: selectedUser.monthlyCount + 1,
-      };
-      await dbService.saveUserProfile(updatedUser);
-
-      // Verbrauch aufzeichnen
-      const consumption = {
-        id: generateId(),
-        userId: selectedUser.id,
-        drinkId: drink.id,
-        drinkName: drink.name,
-        price: drink.price,
-        timestamp: new Date().toISOString(),
-      };
-      await dbService.addConsumption(consumption);
-
-      // Lokale Daten aktualisieren
-      setDrinks(prev => prev.map(d => d.id === drink.id ? updatedDrink : d));
-      setUsers(prev => prev.map(u => u.id === selectedUser.id ? updatedUser : u));
-      setSelectedUser(updatedUser);
-
-      const newBalance = selectedUser.balance - drink.price;
-      const balanceMessage = newBalance >= 0 
-        ? `Ihr Guthaben: CHF ${newBalance.toFixed(2)}`
-        : `Ihr Schuldenstand: CHF ${Math.abs(newBalance).toFixed(2)}`;
+      await purchaseDrink({ userId: selectedUser.id, drinkId: selectedDrink.id, quantity });
       
       Alert.alert(
         'Erfolg', 
-        `${drink.name} wurde erfolgreich gekauft!\n\n${balanceMessage}`,
+        `${quantity}x ${selectedDrink.name} wurde erfolgreich gekauft!\n\n${balanceMessage}`,
         [
           { text: 'OK', style: 'default' }
         ]
       );
+
+      // Modal schließen
+      setQuantityModalVisible(false);
+      setSelectedDrink(null);
+      setSelectedQuantity(1);
     } catch (error) {
       console.error('Fehler beim Kaufen des Getränks:', error);
       Alert.alert('Fehler', 'Beim Kaufen des Getränks ist ein Fehler aufgetreten.');
@@ -164,7 +111,7 @@ export const HomeScreen: React.FC = () => {
                 styles.userItem,
                 selectedUser?.id === user.id && styles.userItemSelected,
               ]}
-              onPress={() => setSelectedUser(user)}
+              onPress={() => selectUser(user.id)}
             >
               <Text style={[
                 styles.userName,
@@ -192,12 +139,12 @@ export const HomeScreen: React.FC = () => {
         <TouchableOpacity 
           style={styles.refreshButton} 
           onPress={refreshData}
-          disabled={isRefreshing}
+          disabled={isHydrating}
         >
           <MaterialIcons 
             name="refresh" 
             size={20} 
-            color={isRefreshing ? "#8E8E93" : "#007AFF"} 
+            color={isHydrating ? "#8E8E93" : "#007AFF"} 
           />
         </TouchableOpacity>
       </View>
@@ -227,6 +174,96 @@ export const HomeScreen: React.FC = () => {
     </View>
   );
 
+  const renderQuantityModal = () => (
+    <Modal
+      visible={quantityModalVisible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setQuantityModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Menge auswählen</Text>
+            <TouchableOpacity 
+              onPress={() => setQuantityModalVisible(false)}
+              style={styles.closeButton}
+            >
+              <MaterialIcons name="close" size={24} color="#000000" />
+            </TouchableOpacity>
+          </View>
+          
+          {selectedDrink && (
+            <View style={styles.drinkInfoContainer}>
+              <DrinkIcon iconKey={selectedDrink.iconKey} size={60} />
+              <Text style={styles.drinkNameLarge}>{selectedDrink.name}</Text>
+              <Text style={styles.drinkPriceLarge}>CHF {selectedDrink.price.toFixed(2)}</Text>
+              <Text style={styles.drinkStockInfo}>
+                {selectedDrink.stock} verfügbar
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.quantityContainer}>
+            <Text style={styles.quantityLabel}>Menge:</Text>
+            <View style={styles.quantityInputContainer}>
+              <TouchableOpacity 
+                style={styles.quantityButton}
+                onPress={() => setSelectedQuantity(Math.max(1, selectedQuantity - 1))}
+                disabled={selectedQuantity <= 1}
+              >
+                <MaterialIcons name="remove" size={20} color="#007AFF" />
+              </TouchableOpacity>
+              
+              <TextInput
+                style={styles.quantityInput}
+                value={selectedQuantity.toString()}
+                onChangeText={(text) => {
+                  const num = parseInt(text) || 1;
+                  setSelectedQuantity(Math.max(1, Math.min(num, Math.min(selectedDrink?.stock || 1, 10))));
+                }}
+                keyboardType="numeric"
+                textAlign="center"
+                maxLength={2}
+              />
+              
+              <TouchableOpacity 
+                style={styles.quantityButton}
+                onPress={() => setSelectedQuantity(Math.min(selectedDrink?.stock || 1, selectedQuantity + 1, 10))}
+                disabled={selectedQuantity >= Math.min(selectedDrink?.stock || 1, 10)}
+              >
+                <MaterialIcons name="add" size={20} color="#007AFF" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {selectedDrink && (
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalLabel}>Gesamtpreis:</Text>
+              <Text style={styles.totalPrice}>CHF {(selectedDrink.price * selectedQuantity).toFixed(2)}</Text>
+            </View>
+          )}
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity 
+              style={styles.cancelModalButton}
+              onPress={() => setQuantityModalVisible(false)}
+            >
+              <Text style={styles.cancelModalButtonText}>Abbrechen</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.confirmButton}
+              onPress={handleConfirmPurchase}
+            >
+              <Text style={styles.confirmButtonText}>Kaufen</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {renderUserSelector()}
@@ -235,7 +272,7 @@ export const HomeScreen: React.FC = () => {
       {!selectedUser && (
         <View style={styles.noUserContainer}>
           <Text style={styles.noUserTitle}>Kein Benutzer ausgewählt</Text>
-          <Text style={styles.noUserText}>
+          <Text style={styles.noUserTitle}>
             Bitte fügen Sie über den Admin-Bereich einen Benutzer hinzu, um Getränke kaufen zu können.
           </Text>
         </View>
@@ -249,6 +286,8 @@ export const HomeScreen: React.FC = () => {
           </Text>
         </View>
       )}
+
+      {renderQuantityModal()}
     </ScrollView>
   );
 };
@@ -420,5 +459,148 @@ const styles = StyleSheet.create({
     color: '#0C5460',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '90%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  drinkInfoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  drinkNameLarge: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginTop: 10,
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  drinkPriceLarge: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    marginBottom: 5,
+  },
+  drinkStockInfo: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  quantityContainer: {
+    marginBottom: 20,
+  },
+  quantityLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000000',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  quantityInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 15,
+  },
+  quantityButton: {
+    ...getPlatformStyle('button'),
+    width: 40,
+    height: 40,
+    borderRadius: isAndroid ? 20 : 20,
+    backgroundColor: '#F2F2F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: isAndroid ? 48 : 40,
+    minWidth: isAndroid ? 48 : 40,
+  },
+  quantityInput: {
+    width: 60,
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000000',
+  },
+  totalPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelModalButton: {
+    ...getPlatformStyle('button'),
+    flex: 1,
+    backgroundColor: '#8E8E93',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: isAndroid ? 4 : 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: isAndroid ? 48 : undefined,
+  },
+  cancelModalButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: isAndroid ? 16 : 14,
+  },
+  confirmButton: {
+    ...getPlatformStyle('button'),
+    flex: 1,
+    backgroundColor: '#00D4AA',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: isAndroid ? 4 : 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: isAndroid ? 48 : undefined,
+  },
+  confirmButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: isAndroid ? 16 : 14,
   },
 });
