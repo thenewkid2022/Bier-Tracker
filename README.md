@@ -141,8 +141,7 @@ src/
 ├── services/
 │   ├── DatabaseService.ts    # SQLite/AsyncStorage-Persistenz, Migration, Transaktionen
 │   ├── TwintService.ts       # TWINT-URLs, QR-Daten, Validierung, Deep-Link-Parsing
-│   ├── NotificationService.ts
-│   └── PermissionService.ts
+│   └── NotificationService.ts
 ├── screens/
 │   ├── HomeScreen.tsx
 │   ├── ProfileScreen.tsx
@@ -264,10 +263,17 @@ npm run submit:testflight
 npm run submit:production
 npm run submit:android
 
-# Build-Nummer hochzählen (iOS buildNumber + Android versionCode)
-npm run bump:build        # macOS/Linux
-npm run bump:build:win    # Windows
+# Build-Nummer hochzählen (iOS buildNumber + Android versionCode, plattformunabhängig)
+npm run bump:build
 ```
+
+**Ziel-Geräte:** iPhone und iPad (`supportsTablet: true`). iPhone läuft im Portrait-Modus; auf dem iPad
+erlaubt Expo alle Ausrichtungen (Voraussetzung für iPad-Multitasking), das Layout passt sich über
+`useWindowDimensions`/Breakpoints an. Für den App-Store-Eintrag werden daher Screenshots für
+iPhone 6,7"/6,5" **und** iPad 13" benötigt.
+
+**iOS-Berechtigungen:** Die App fragt nur nach Benachrichtigungen. `LSApplicationQueriesSchemes`
+enthält `twint`, damit `Linking.canOpenURL('twint://')` unter iOS zuverlässig funktioniert.
 
 Weitere Details: `TESTFLIGHT_SETUP.md`, `GOOGLE_PLAY_CHECKLIST.md`, `google-play-setup.md`, `ANDROID_SETUP.md`.
 

@@ -50,28 +50,33 @@ eas build --platform ios --profile testflight
 
 ## ⚙️ Schritt 6: EAS Submit konfigurieren
 
-Die `eas.json` Datei ist bereits vollständig mit Ihren Daten konfiguriert:
+Die `eas.json` Datei enthält Submit-Profile für `testflight` und `production`:
 
 ```json
 {
   "submit": {
     "testflight": {
       "ios": {
-        "appleId": "chrigel84-gmail.com",    // ✅ Vollständig konfiguriert
-        "ascAppId": "6751214675",            // ✅ Vollständig konfiguriert
-        "appleTeamId": "767Q6NXN2U"         // ✅ Vollständig konfiguriert
+        "ascAppId": "6751214675",
+        "appleTeamId": "767Q6NXN2U"
+      }
+    },
+    "production": {
+      "ios": {
+        "ascAppId": "6751214675",
+        "appleTeamId": "767Q6NXN2U"
       }
     }
   }
 }
 ```
 
-**Alle Daten sind vollständig konfiguriert:**
-- **appleId:** `chrigel84-gmail.com` ✅
-- **ascAppId:** `6751214675` ✅
-- **appleTeamId:** `767Q6NXN2U` ✅
-- **Bundle ID:** `com.thenewkid2022.bierlounge-tracker` ✅
-- **SKU:** `GT-001` ✅
+- **ascAppId:** `6751214675` (App Store Connect → App-Informationen → Apple-ID)
+- **appleTeamId:** `767Q6NXN2U`
+- **Bundle ID:** `com.thenewkid2022.bierlounge-tracker`
+- **SKU:** `GT-001`
+- Die Apple-ID (E-Mail) wird beim ersten `eas submit` interaktiv abgefragt und von EAS gespeichert –
+  sie steht bewusst nicht im Repo.
 
 **🎉 Sie können jetzt direkt mit dem Build beginnen!**
 
@@ -100,12 +105,11 @@ eas submit --platform ios --profile testflight
 ## ⚠️ Wichtige Hinweise
 
 ### Bundle Version aktualisieren
-Bei jedem neuen Build die `buildNumber` in `app.json` erhöhen:
+Bei jedem neuen Build müssen `ios.buildNumber` und `android.versionCode` in `app.json` erhöht werden.
+Das erledigt ein Skript für beide Plattformen gleichzeitig:
 
-```json
-"ios": {
-  "buildNumber": "2"  // Von "1" auf "2" erhöhen
-}
+```bash
+npm run bump:build
 ```
 
 ### App-Version aktualisieren

@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Dimensions,
+  useWindowDimensions,
   Modal,
   TextInput,
 } from 'react-native';
@@ -17,7 +17,8 @@ import { useAppStore } from '../state/appStore';
 import { getPlatformStyle, isAndroid } from '../utils/platformStyles';
 import type { Drink } from '../domain/schemas';
 
-const { width } = Dimensions.get('window');
+/** Ab dieser Breite (iPad, Landscape, Split View) wird das zweispaltige Layout genutzt. */
+const WIDE_LAYOUT_BREAKPOINT = 900;
 
 export const HomeScreen: React.FC = () => {
   const { users, drinks, selectedUserId, hydrate, selectUser, purchaseDrink, isHydrating } = useAppStore(
@@ -32,18 +33,14 @@ export const HomeScreen: React.FC = () => {
     }))
   );
   const selectedUser = selectedUserId ? (users.find((u) => u.id === selectedUserId) ?? null) : null;
-  const [isWide, setIsWide] = useState(width >= 900);
+  const { width } = useWindowDimensions();
+  const isWide = width >= WIDE_LAYOUT_BREAKPOINT;
   const [quantityModalVisible, setQuantityModalVisible] = useState(false);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
 
   useEffect(() => {
     hydrate().catch((error) => console.error('Fehler beim Hydraten der Daten:', error));
-    const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      setIsWide(window.width >= 900);
-    });
-
-    return () => subscription?.remove();
   }, [hydrate]);
 
   const refreshData = async () => {

@@ -24,9 +24,32 @@ module.exports = defineConfig([
     rules: {
       // Prettier-Verstöße als Warnung, damit `lint` nicht an Formatierung scheitert (Fix via `format`).
       'prettier/prettier': 'warn',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    // TypeScript-spezifische Regeln nur dort, wo das Plugin aktiv ist.
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: {
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    // Node-CLI-Skripte (CommonJS, console-Ausgabe erwünscht).
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        __dirname: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        process: 'readonly',
+        console: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
     },
   },
   {

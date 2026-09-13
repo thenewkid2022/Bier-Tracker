@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 7.0.0"
+    "version": ">= 7.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -32,17 +33,23 @@
       }
     },
     "testflight": {
+      "extends": "production",
       "ios": {
         "resourceClass": "m-medium"
       }
     }
   },
   "submit": {
+    "testflight": {
+      "ios": {
+        "ascAppId": "6751214675",
+        "appleTeamId": "767Q6NXN2U"
+      }
+    },
     "production": {
       "ios": {
-        "appleId": "your-apple-id@example.com",
-        "ascAppId": "your-app-store-connect-app-id",
-        "appleTeamId": "your-apple-team-id"
+        "ascAppId": "6751214675",
+        "appleTeamId": "767Q6NXN2U"
       },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",

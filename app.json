@@ -2,7 +2,7 @@
   "expo": {
     "name": "Getränke Tracker",
     "slug": "getraenke-tracker",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -16,11 +16,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thenewkid2022.bierlounge-tracker",
-      "buildNumber": "6",
+      "buildNumber": "7",
       "infoPlist": {
         "NSUserNotificationUsageDescription": "Diese App verwendet Benachrichtigungen, um Sie über Ihre Getränke-Einkäufe zu informieren.",
-        "NSCameraUsageDescription": "Diese App benötigt Zugriff auf die Kamera für QR-Code-Scans.",
-        "NSPhotoLibraryUsageDescription": "Diese App benötigt Zugriff auf die Fotobibliothek für QR-Code-Bilder.",
+        "LSApplicationQueriesSchemes": ["twint"],
         "CFBundleDisplayName": "Getränke Tracker",
         "CFBundleName": "Getränke Tracker",
         "CFBundleURLTypes": [
@@ -34,7 +33,7 @@
     },
     "android": {
       "package": "com.ragnarus.getraenketracker",
-      "versionCode": 6,
+      "versionCode": 7,
       "backgroundColor": "#00D4AA"
     },
     "scheme": "getraenke-tracker",
