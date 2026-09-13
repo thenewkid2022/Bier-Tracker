@@ -4,10 +4,10 @@ import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 export class PermissionService {
   static async requestCameraPermission(): Promise<boolean> {
     if (Platform.OS !== 'android') return true;
-    
+
     try {
       const result = await request(PERMISSIONS.ANDROID.CAMERA);
-      
+
       if (result === RESULTS.GRANTED) {
         return true;
       } else if (result === RESULTS.DENIED) {
@@ -16,7 +16,7 @@ export class PermissionService {
           'Diese App benötigt Zugriff auf die Kamera für QR-Code-Scans.',
           [
             { text: 'Abbrechen', style: 'cancel' },
-            { text: 'Einstellungen öffnen', onPress: () => this.openSettings() }
+            { text: 'Einstellungen öffnen', onPress: () => this.openSettings() },
           ]
         );
         return false;
@@ -26,7 +26,7 @@ export class PermissionService {
           'Bitte aktivieren Sie die Kamera-Berechtigung in den Einstellungen.',
           [
             { text: 'Abbrechen', style: 'cancel' },
-            { text: 'Einstellungen öffnen', onPress: () => this.openSettings() }
+            { text: 'Einstellungen öffnen', onPress: () => this.openSettings() },
           ]
         );
         return false;
@@ -39,10 +39,10 @@ export class PermissionService {
 
   static async requestStoragePermission(): Promise<boolean> {
     if (Platform.OS !== 'android') return true;
-    
+
     try {
       const result = await request(PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE);
-      
+
       if (result === RESULTS.GRANTED) {
         return true;
       } else {
@@ -51,7 +51,7 @@ export class PermissionService {
           'Diese App benötigt Zugriff auf den Speicher für lokale Daten.',
           [
             { text: 'Abbrechen', style: 'cancel' },
-            { text: 'Einstellungen öffnen', onPress: () => this.openSettings() }
+            { text: 'Einstellungen öffnen', onPress: () => this.openSettings() },
           ]
         );
         return false;
@@ -64,7 +64,7 @@ export class PermissionService {
 
   static async checkCameraPermission(): Promise<boolean> {
     if (Platform.OS !== 'android') return true;
-    
+
     try {
       const result = await check(PERMISSIONS.ANDROID.CAMERA);
       return result === RESULTS.GRANTED;
@@ -76,7 +76,7 @@ export class PermissionService {
 
   static async checkStoragePermission(): Promise<boolean> {
     if (Platform.OS !== 'android') return true;
-    
+
     try {
       const result = await check(PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE);
       return result === RESULTS.GRANTED;
@@ -88,31 +88,31 @@ export class PermissionService {
 
   static async checkAllPermissions(): Promise<boolean> {
     if (Platform.OS !== 'android') return true;
-    
+
     const cameraPermission = await this.checkCameraPermission();
     const storagePermission = await this.checkStoragePermission();
-    
+
     return cameraPermission && storagePermission;
   }
 
   static async requestAllPermissions(): Promise<boolean> {
     if (Platform.OS !== 'android') return true;
-    
+
     const cameraPermission = await this.requestCameraPermission();
     const storagePermission = await this.requestStoragePermission();
-    
+
     return cameraPermission && storagePermission;
   }
 
   static async requestPermissionsIfNeeded(): Promise<boolean> {
     if (Platform.OS !== 'android') return true;
-    
+
     const hasAllPermissions = await this.checkAllPermissions();
-    
+
     if (!hasAllPermissions) {
       return await this.requestAllPermissions();
     }
-    
+
     return true;
   }
 
@@ -128,23 +128,19 @@ export class PermissionService {
       'Aktivieren Sie den Autostart-Manager für diese App',
       'Schließen Sie die App von der Batterieoptimierung aus',
       'Erlauben Sie Hintergrundaktivitäten',
-      'Aktivieren Sie Push-Benachrichtigungen'
+      'Aktivieren Sie Push-Benachrichtigungen',
     ];
   }
 
   static showColorOSOptimizationDialog() {
     if (Platform.OS !== 'android') return;
-    
-    Alert.alert(
-      'ColorOS-Optimierung',
-      'Für optimale Funktionalität auf OPPO-Geräten:',
-      [
-        { text: 'Abbrechen', style: 'cancel' },
-        { 
-          text: 'Einstellungen öffnen', 
-          onPress: () => this.openSettings() 
-        }
-      ]
-    );
+
+    Alert.alert('ColorOS-Optimierung', 'Für optimale Funktionalität auf OPPO-Geräten:', [
+      { text: 'Abbrechen', style: 'cancel' },
+      {
+        text: 'Einstellungen öffnen',
+        onPress: () => this.openSettings(),
+      },
+    ]);
   }
 }

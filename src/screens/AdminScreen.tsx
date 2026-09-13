@@ -159,9 +159,8 @@ export const AdminScreen: React.FC = () => {
       }
     );
 
-  const handleTwintPaymentRequestSent = async (userId: string, amount: number, message: string) => {
+  const handleTwintPaymentRequestSent = async (_userId: string, _amount: number, _message: string) => {
     // Die eigentliche Verbuchung passiert über den Deep-Link-Return (app/_layout.tsx).
-    console.log(`TWINT-Zahlungsanfrage für Benutzer ${userId}: ${amount} CHF - ${message}`);
     await loadData();
   };
 

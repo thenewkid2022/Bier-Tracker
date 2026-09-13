@@ -77,7 +77,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       set({
         users,
         drinks,
-        selectedUserId: get().selectedUserId && users.some((u) => u.id === get().selectedUserId) ? get().selectedUserId : users[0]?.id ?? null,
+        selectedUserId:
+          get().selectedUserId && users.some((u) => u.id === get().selectedUserId)
+            ? get().selectedUserId
+            : (users[0]?.id ?? null),
       });
     } finally {
       set({ isHydrating: false });
@@ -111,7 +114,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     });
 
     // Best-effort Notifications (darf den Kauf-Flow nicht blockieren)
-    void NotificationService.notifyDrinkConsumption(result.updatedUser.name, result.updatedDrink.name, result.totalPrice).catch(() => {});
+    void NotificationService.notifyDrinkConsumption(
+      result.updatedUser.name,
+      result.updatedDrink.name,
+      result.totalPrice
+    ).catch(() => {});
     if (result.updatedDrink.stock <= 5) {
       void NotificationService.notifyLowStock(result.updatedDrink.name, result.updatedDrink.stock).catch(() => {});
     }
@@ -202,4 +209,3 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await get().refreshAdminStatus();
   },
 }));
-

@@ -1,4 +1,4 @@
-﻿import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SQLite from 'expo-sqlite';
 import {
   ConsumptionSchema,
@@ -26,7 +26,7 @@ export class DatabaseService {
   private useSQLite = false;
   private didMigrateFromAsyncStorage = false;
 
-  // In-Memory-Daten fÃ¼r bessere Performance
+  // In-Memory-Daten für bessere Performance
   private users: UserProfile[] = [];
   private drinks: Drink[] = [];
   private consumptions: Consumption[] = [];
@@ -35,7 +35,7 @@ export class DatabaseService {
     this.ready = this.initializeDatabase();
   }
 
-  // Singleton-Pattern fÃ¼r Datenkonsistenz
+  // Singleton-Pattern für Datenkonsistenz
   public static getInstance(): DatabaseService {
     if (!DatabaseService.instance) {
       DatabaseService.instance = new DatabaseService();
@@ -53,7 +53,12 @@ export class DatabaseService {
       }
       await this.seedDemoDataIfNeeded();
       this.isInitialized = true;
-      console.log(this.useSQLite ? 'SQLite-Datenbank erfolgreich initialisiert' : 'AsyncStorage-Datenbank erfolgreich initialisiert');
+      // eslint-disable-next-line no-console -- bewusstes Diagnose-Log beim App-Start
+      console.log(
+        this.useSQLite
+          ? 'SQLite-Datenbank erfolgreich initialisiert'
+          : 'AsyncStorage-Datenbank erfolgreich initialisiert'
+      );
     } catch (error) {
       console.error('Fehler beim Initialisieren der Datenbank:', error);
       this.isInitialized = true;
@@ -99,8 +104,8 @@ export class DatabaseService {
         CREATE INDEX IF NOT EXISTS idx_consumptions_drinkId ON consumptions(drinkId);
       `);
     } catch (error) {
-      // Fallback auf AsyncStorage, falls SQLite auf dem jeweiligen Laufzeit-Target nicht verfÃ¼gbar ist.
-      console.error('SQLite initialisieren fehlgeschlagen, Fallback auf AsyncStorage:', error);
+      // Fallback auf AsyncStorage, falls SQLite auf dem jeweiligen Laufzeit-Target nicht verfügbar ist.
+      console.warn('SQLite initialisieren fehlgeschlagen, Fallback auf AsyncStorage:', error);
       this.sqliteDb = null;
       this.useSQLite = false;
     }
@@ -190,7 +195,7 @@ export class DatabaseService {
         }
       }
 
-      // SQLite ist leer oder nicht verfÃ¼gbar: lade von AsyncStorage (Migration).
+      // SQLite ist leer oder nicht verfügbar: lade von AsyncStorage (Migration).
       const [storedUsers, storedDrinks, storedConsumptions] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.users),
         AsyncStorage.getItem(STORAGE_KEYS.drinks),
@@ -209,7 +214,7 @@ export class DatabaseService {
         this.drinks = parseArraySafe(DrinkSchema, JSON.parse(storedDrinks), 'drinks');
       }
       if (storedConsumptions) {
-        // Ã„ltere Versionen haben ISO-Strings statt Unix-Millisekunden gespeichert.
+        // Ältere Versionen haben ISO-Strings statt Unix-Millisekunden gespeichert.
         const raw: unknown = JSON.parse(storedConsumptions);
         const normalized = Array.isArray(raw)
           ? raw.map((entry: unknown) => {
@@ -239,17 +244,23 @@ export class DatabaseService {
           `);
 
           for (const u of this.users) {
-            await db.runAsync(
-              'INSERT INTO users (id, name, email, balance, monthlyCount) VALUES (?, ?, ?, ?, ?)',
-              [u.id, u.name, u.email ?? null, u.balance, u.monthlyCount]
-            );
+            await db.runAsync('INSERT INTO users (id, name, email, balance, monthlyCount) VALUES (?, ?, ?, ?, ?)', [
+              u.id,
+              u.name,
+              u.email ?? null,
+              u.balance,
+              u.monthlyCount,
+            ]);
           }
 
           for (const d of this.drinks) {
-            await db.runAsync(
-              'INSERT INTO drinks (id, name, price, stock, iconKey) VALUES (?, ?, ?, ?, ?)',
-              [d.id, d.name, d.price, d.stock, d.iconKey]
-            );
+            await db.runAsync('INSERT INTO drinks (id, name, price, stock, iconKey) VALUES (?, ?, ?, ?, ?)', [
+              d.id,
+              d.name,
+              d.price,
+              d.stock,
+              d.iconKey,
+            ]);
           }
 
           for (const c of this.consumptions) {
@@ -309,104 +320,95 @@ export class DatabaseService {
         email: 'tom@example.com',
         balance: -32.0,
         monthlyCount: 15,
-      }
+      },
     ];
 
     const demoDrinks = [
       {
         id: generateId(),
         name: 'Bier',
-        price: 3.50,
+        price: 3.5,
         stock: 50,
         iconKey: 'beer',
       },
       {
         id: generateId(),
         name: 'Wein',
-        price: 4.50,
+        price: 4.5,
         stock: 30,
         iconKey: 'wine',
       },
       {
         id: generateId(),
         name: 'Cocktail',
-        price: 6.00,
+        price: 6.0,
         stock: 20,
         iconKey: 'cocktail',
       },
       {
         id: generateId(),
         name: 'Softdrink',
-        price: 2.50,
+        price: 2.5,
         stock: 40,
         iconKey: 'soda',
       },
       {
         id: generateId(),
         name: 'Kaffee',
-        price: 2.00,
+        price: 2.0,
         stock: 60,
         iconKey: 'coffee',
       },
       {
         id: generateId(),
         name: 'Tee',
-        price: 1.50,
+        price: 1.5,
         stock: 45,
         iconKey: 'water',
-      }
+      },
     ];
 
-    // Demo-Benutzer einfÃ¼gen
-    for (const user of demoUsers) {
-      await this.saveUserProfile(user);
-    }
-
-    // Demo-GetrÃ¤nke einfÃ¼gen
-    for (const drink of demoDrinks) {
-      await this.saveDrink(drink);
-    }
-
-    // Demo-Konsum einfÃ¼gen
-    const demoConsumptions = [
+    const demoConsumptions: Consumption[] = [
       {
         id: generateId(),
         userId: demoUsers[0].id,
         drinkId: demoDrinks[0].id,
         timestamp: Date.now() - 86400000,
-        price: 3.50,
+        price: 3.5,
       },
       {
         id: generateId(),
         userId: demoUsers[1].id,
         drinkId: demoDrinks[2].id,
         timestamp: Date.now() - 43200000,
-        price: 6.00,
+        price: 6.0,
       },
       {
         id: generateId(),
         userId: demoUsers[0].id,
         drinkId: demoDrinks[1].id,
         timestamp: Date.now() - 21600000,
-        price: 4.50,
-      }
+        price: 4.5,
+      },
     ];
 
-    for (const consumption of demoConsumptions) {
-      await this.addConsumption(consumption);
-    }
-
-    console.log('Demo-Daten erfolgreich eingefÃ¼gt');
+    // Wichtig: NICHT über die öffentlichen save*-Methoden gehen. Diese warten auf `this.ready`,
+    // das während der Initialisierung noch pending ist -> Deadlock beim Erststart.
+    // Stattdessen In-Memory befüllen und einmalig komplett persistieren.
+    this.users = demoUsers;
+    this.drinks = demoDrinks;
+    this.consumptions = demoConsumptions;
+    await this.saveToStorage();
   }
 
   // Benutzer-Methoden
   async saveUserProfile(user: UserProfile): Promise<void> {
     await this.ensureReady();
-    const existingIndex = this.users.findIndex(u => u.id === user.id);
+    const existingIndex = this.users.findIndex((u) => u.id === user.id);
     if (existingIndex >= 0) {
-      this.users[existingIndex] = user;
+      this.users[existingIndex] = { ...user };
     } else {
-      this.users.push(user);
+      this.users.push({ ...user });
     }
     if (this.useSQLite && this.sqliteDb) {
       await this.sqliteDb.runAsync(
@@ -421,17 +423,18 @@ export class DatabaseService {
 
   async getUserProfile(id: string): Promise<UserProfile | null> {
     await this.ensureReady();
-    return this.users.find(u => u.id === id) || null;
+    const user = this.users.find((u) => u.id === id);
+    return user ? { ...user } : null;
   }
 
   async getAllUserProfiles(): Promise<UserProfile[]> {
     await this.ensureReady();
-    return [...this.users];
+    return this.users.map((u) => ({ ...u }));
   }
 
   async deleteUser(userId: string): Promise<void> {
     await this.ensureReady();
-    // Beim LÃ¶schen eines Users mÃ¼ssen wir den Bestand der zugehÃ¶rigen Konsum-EintrÃ¤ge zurÃ¼ckrollen.
+    // Beim Löschen eines Users müssen wir den Bestand der zugehörigen Konsum-Einträge zurückrollen.
     const consumptionsToDelete = this.consumptions.filter((c) => c.userId === userId);
     const affectedDrinkIds = new Set<string>();
     for (const c of consumptionsToDelete) {
@@ -446,7 +449,7 @@ export class DatabaseService {
     this.consumptions = this.consumptions.filter((c) => c.userId !== userId);
 
     if (this.useSQLite && this.sqliteDb) {
-      // Persistiere Bestandskorrekturen auf betroffenen GetrÃ¤nken.
+      // Persistiere Bestandskorrekturen auf betroffenen Getränken.
       for (const drinkId of affectedDrinkIds) {
         const drink = this.drinks.find((d) => d.id === drinkId);
         if (!drink) continue;
@@ -461,14 +464,14 @@ export class DatabaseService {
     await this.saveToStorage();
   }
 
-  // GetrÃ¤nke-Methoden
+  // Getränke-Methoden
   async saveDrink(drink: Drink): Promise<void> {
     await this.ensureReady();
-    const existingIndex = this.drinks.findIndex(d => d.id === drink.id);
+    const existingIndex = this.drinks.findIndex((d) => d.id === drink.id);
     if (existingIndex >= 0) {
-      this.drinks[existingIndex] = drink;
+      this.drinks[existingIndex] = { ...drink };
     } else {
-      this.drinks.push(drink);
+      this.drinks.push({ ...drink });
     }
     if (this.useSQLite && this.sqliteDb) {
       await this.sqliteDb.runAsync(
@@ -483,17 +486,18 @@ export class DatabaseService {
 
   async getDrink(id: string): Promise<Drink | null> {
     await this.ensureReady();
-    return this.drinks.find(d => d.id === id) || null;
+    const drink = this.drinks.find((d) => d.id === id);
+    return drink ? { ...drink } : null;
   }
 
   async getAllDrinks(): Promise<Drink[]> {
     await this.ensureReady();
-    return [...this.drinks];
+    return this.drinks.map((d) => ({ ...d }));
   }
 
   async deleteDrink(drinkId: string): Promise<void> {
     await this.ensureReady();
-    // Beim LÃ¶schen eines GetrÃ¤nks mÃ¼ssen wir die Balance/Monatsstatistik der betroffenen Users zurÃ¼ckrollen.
+    // Beim Löschen eines Getränks müssen wir die Balance/Monatsstatistik der betroffenen Users zurückrollen.
     const consumptionsToDelete = this.consumptions.filter((c) => c.drinkId === drinkId);
     const affectedUserIds = new Set<string>();
     for (const c of consumptionsToDelete) {
@@ -513,10 +517,11 @@ export class DatabaseService {
       for (const uid of affectedUserIds) {
         const user = this.users.find((u) => u.id === uid);
         if (!user) continue;
-        await this.sqliteDb.runAsync(
-          'UPDATE users SET balance = ?, monthlyCount = ? WHERE id = ?',
-          [user.balance, user.monthlyCount, uid]
-        );
+        await this.sqliteDb.runAsync('UPDATE users SET balance = ?, monthlyCount = ? WHERE id = ?', [
+          user.balance,
+          user.monthlyCount,
+          uid,
+        ]);
       }
 
       await this.sqliteDb.runAsync('DELETE FROM consumptions WHERE drinkId = ?', [drinkId]);
@@ -529,7 +534,7 @@ export class DatabaseService {
 
   async updateDrinkStock(drinkId: string, newStock: number): Promise<void> {
     await this.ensureReady();
-    const drink = this.drinks.find(d => d.id === drinkId);
+    const drink = this.drinks.find((d) => d.id === drinkId);
     if (drink) {
       drink.stock = newStock;
       if (this.useSQLite && this.sqliteDb) {
@@ -544,11 +549,11 @@ export class DatabaseService {
   // Konsum-Methoden
   async addConsumption(consumption: Consumption): Promise<void> {
     await this.ensureReady();
-    const existingIndex = this.consumptions.findIndex(c => c.id === consumption.id);
+    const existingIndex = this.consumptions.findIndex((c) => c.id === consumption.id);
     if (existingIndex >= 0) {
-      this.consumptions[existingIndex] = consumption;
+      this.consumptions[existingIndex] = { ...consumption };
     } else {
-      this.consumptions.push(consumption);
+      this.consumptions.push({ ...consumption });
     }
 
     if (this.useSQLite && this.sqliteDb) {
@@ -571,43 +576,44 @@ export class DatabaseService {
 
   async getConsumptionsByUser(userId: string): Promise<Consumption[]> {
     await this.ensureReady();
-    return this.consumptions.filter(c => c.userId === userId);
+    return this.consumptions.filter((c) => c.userId === userId).map((c) => ({ ...c }));
   }
 
   async getConsumptionsWithDrinkInfo(userId: string): Promise<Consumption[]> {
     await this.ensureReady();
     return this.consumptions
-      .filter(c => c.userId === userId)
-      .map(c => ({
+      .filter((c) => c.userId === userId)
+      .map((c) => ({
         ...c,
-        drinkName: this.drinks.find(d => d.id === c.drinkId)?.name || 'Unbekanntes GetrÃ¤nk',
-        iconKey: this.drinks.find(d => d.id === c.drinkId)?.iconKey || 'beer'
+        drinkName: this.drinks.find((d) => d.id === c.drinkId)?.name || 'Unbekanntes Getränk',
+        iconKey: this.drinks.find((d) => d.id === c.drinkId)?.iconKey || 'beer',
       }));
   }
 
   async deleteConsumption(consumptionId: string): Promise<void> {
     await this.ensureReady();
-    const consumption = this.consumptions.find(c => c.id === consumptionId);
+    const consumption = this.consumptions.find((c) => c.id === consumptionId);
     if (!consumption) {
       return;
     }
-    const user = this.users.find(u => u.id === consumption.userId);
+    const user = this.users.find((u) => u.id === consumption.userId);
     if (user) {
       user.balance += consumption.price;
       user.monthlyCount = Math.max(0, user.monthlyCount - (consumption.quantity ?? 1));
     }
-    const drink = this.drinks.find(d => d.id === consumption.drinkId);
+    const drink = this.drinks.find((d) => d.id === consumption.drinkId);
     if (drink) {
       drink.stock += consumption.quantity ?? 1;
     }
-    this.consumptions = this.consumptions.filter(c => c.id !== consumptionId);
+    this.consumptions = this.consumptions.filter((c) => c.id !== consumptionId);
 
     if (this.useSQLite && this.sqliteDb) {
       if (user) {
-        await this.sqliteDb.runAsync(
-          'UPDATE users SET balance = ?, monthlyCount = ? WHERE id = ?',
-          [user.balance, user.monthlyCount, user.id]
-        );
+        await this.sqliteDb.runAsync('UPDATE users SET balance = ?, monthlyCount = ? WHERE id = ?', [
+          user.balance,
+          user.monthlyCount,
+          user.id,
+        ]);
       }
       if (drink) {
         await this.sqliteDb.runAsync('UPDATE drinks SET stock = ? WHERE id = ?', [drink.stock, drink.id]);
@@ -619,20 +625,19 @@ export class DatabaseService {
     await this.saveToStorage();
   }
 
-  // Mock-Daten zurÃ¼cksetzen
+  // Mock-Daten zurücksetzen
   async resetMockData(): Promise<void> {
     try {
       await this.clearAllData();
       await this.insertDemoData();
       await AsyncStorage.setItem(STORAGE_KEYS.seeded, '1');
-      console.log('Demo-Daten erfolgreich zurÃ¼ckgesetzt');
     } catch (error) {
-      console.error('Fehler beim ZurÃ¼cksetzen der Demo-Daten:', error);
+      console.error('Fehler beim Zurücksetzen der Demo-Daten:', error);
       throw error;
     }
   }
 
-  // Alle Daten lÃ¶schen
+  // Alle Daten löschen
   async clearAllData(): Promise<void> {
     await this.ensureReady();
     this.users = [];
@@ -650,19 +655,19 @@ export class DatabaseService {
     await this.saveToStorage();
   }
 
-  // Daten exportieren (fÃ¼r Persistierung)
+  // Daten exportieren (für Persistierung)
   async exportData(): Promise<Record<string, unknown>> {
     try {
       await this.ensureReady();
       const users = await this.getAllUserProfiles();
       const drinks = await this.getAllDrinks();
       const consumptions = await this.getAllConsumptions();
-      
+
       return {
         users,
         drinks,
         consumptions,
-        exportDate: new Date().toISOString()
+        exportDate: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Fehler beim Exportieren der Daten:', error);
@@ -673,10 +678,10 @@ export class DatabaseService {
   // Alle Konsum-Daten abrufen
   private async getAllConsumptions(): Promise<Consumption[]> {
     await this.ensureReady();
-    return [...this.consumptions];
+    return this.consumptions.map((c) => ({ ...c }));
   }
 
-  // Datenbank-Status prÃ¼fen
+  // Datenbank-Status prüfen
   async getDatabaseStatus(): Promise<{ isInitialized: boolean; tableCounts: Record<string, number> }> {
     try {
       await this.ensureReady();
@@ -689,8 +694,8 @@ export class DatabaseService {
         tableCounts: {
           users: userCount,
           drinks: drinkCount,
-          consumptions: consumptionCount
-        }
+          consumptions: consumptionCount,
+        },
       };
     } catch (error) {
       console.error('Fehler beim Abrufen des Datenbank-Status:', error);
@@ -748,7 +753,7 @@ export class DatabaseService {
     const finalQuantity = Math.max(1, Math.min(args.quantity, maxQuantity));
     const totalPrice = drink.price * finalQuantity;
 
-    // In-Memory anpassen (Quelle der Wahrheit fÃ¼r UI-Render)
+    // In-Memory anpassen (Quelle der Wahrheit für UI-Render)
     drink.stock -= finalQuantity;
     user.balance -= totalPrice; // negative = offene Rechnung -> wird negativer
     user.monthlyCount += finalQuantity;
@@ -776,7 +781,14 @@ export class DatabaseService {
         );
         await this.sqliteDb!.runAsync(
           'INSERT OR REPLACE INTO consumptions (id, userId, drinkId, timestamp, price, quantity) VALUES (?, ?, ?, ?, ?, ?)',
-          [consumption.id, consumption.userId, consumption.drinkId, consumption.timestamp, consumption.price, consumption.quantity ?? null]
+          [
+            consumption.id,
+            consumption.userId,
+            consumption.drinkId,
+            consumption.timestamp,
+            consumption.price,
+            consumption.quantity ?? null,
+          ]
         );
       });
     } else {

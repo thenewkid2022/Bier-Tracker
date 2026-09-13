@@ -6,7 +6,7 @@ import { DrinkIcon } from '../../components/DrinkIcon';
 import { colors, radius, spacing } from '../../theme';
 import type { Drink, DrinkIconKey } from '../../domain/schemas';
 
-const ICON_OPTIONS: ReadonlyArray<{ key: DrinkIconKey; label: string }> = [
+const ICON_OPTIONS: readonly { key: DrinkIconKey; label: string }[] = [
   { key: 'beer', label: 'Bier' },
   { key: 'wine', label: 'Wein' },
   { key: 'coffee', label: 'Kaffee' },
@@ -91,8 +91,14 @@ export const DrinkManagementSection: React.FC<Props> = ({ drinks, onAddDrink, on
                     style={[styles.iconOption, selected && styles.iconOptionSelected]}
                     onPress={() => setIconKey(option.key)}
                   >
-                    <DrinkIcon iconKey={option.key} size={24} color={selected ? colors.textOnPrimary : colors.primary} />
-                    <Text style={[styles.iconOptionLabel, selected && styles.iconOptionLabelSelected]}>{option.label}</Text>
+                    <DrinkIcon
+                      iconKey={option.key}
+                      size={24}
+                      color={selected ? colors.textOnPrimary : colors.primary}
+                    />
+                    <Text style={[styles.iconOptionLabel, selected && styles.iconOptionLabelSelected]}>
+                      {option.label}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}

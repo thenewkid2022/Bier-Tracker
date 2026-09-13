@@ -79,14 +79,14 @@ export class TwintService {
   generatePaymentRequest(amount: number, message: string = '', iban?: string): string {
     // Verwende Admin-IBAN falls verfügbar, sonst übergebene IBAN
     const useIban = iban || this.adminConfig.iban;
-    
+
     // TWINT-Format: twint://pay?amount=XX.XX&message=XXX&iban=XXX
     let twintUrl = `twint://pay?amount=${amount.toFixed(2)}&message=${encodeURIComponent(message)}`;
-    
+
     if (useIban) {
       twintUrl += `&iban=${encodeURIComponent(useIban)}`;
     }
-    
+
     return twintUrl;
   }
 
@@ -109,15 +109,17 @@ export class TwintService {
         // Mit IBAN falls verfügbar
         `twint://pay?amount=${amount.toFixed(2)}&message=${encodeURIComponent(message)}&iban=${encodeURIComponent(iban || this.adminConfig.iban || '')}`,
         // Einfaches Format
-        `twint://pay?amount=${amount.toFixed(2)}`
+        `twint://pay?amount=${amount.toFixed(2)}`,
       ];
-      
+
       // IBAN hinzufügen falls verfügbar
       const useIban = iban || this.adminConfig.iban;
       if (useIban) {
-        twintUrls.push(`twint://pay?amount=${amount.toFixed(2)}&message=${encodeURIComponent(message)}&iban=${encodeURIComponent(useIban)}`);
+        twintUrls.push(
+          `twint://pay?amount=${amount.toFixed(2)}&message=${encodeURIComponent(message)}&iban=${encodeURIComponent(useIban)}`
+        );
       }
-      
+
       // Verschiedene URLs versuchen
       for (const url of twintUrls) {
         const canOpen = await Linking.canOpenURL(url);
@@ -126,7 +128,7 @@ export class TwintService {
           return true;
         }
       }
-      
+
       throw new Error('Keine TWINT-URL funktioniert');
     } catch (error) {
       console.error('Fehler beim Öffnen der TWINT-App:', error);
@@ -140,7 +142,11 @@ export class TwintService {
   }
 
   // Zahlungsanfrage für einen Benutzer generieren (mit Admin-Daten)
-  generateUserPaymentRequest(userId: string, amount: number, description: string = ''): {
+  generateUserPaymentRequest(
+    userId: string,
+    amount: number,
+    description: string = ''
+  ): {
     paymentUrl: string;
     qrCodeData: string;
     message: string;
@@ -150,19 +156,19 @@ export class TwintService {
     // Verwende Admin-Standard-Nachricht falls verfügbar
     const defaultMessage = this.adminConfig.defaultMessage || 'Getränke Tracker';
     const message = `${defaultMessage} - ${description}`.trim();
-    
+
     const paymentUrl = this.generatePaymentRequest(amount, message);
     const deepLinkUrl = `${APP_SCHEME}://payment-return?userId=${userId}&amount=${amount}&status=pending`;
-    
+
     // Admin-Informationen für Anzeige
     const adminInfo = this.adminConfig.merchantName || 'Admin';
-    
+
     return {
       paymentUrl,
       qrCodeData: paymentUrl,
       message: `Zahlungsanfrage für ${amount.toFixed(2)} CHF`,
       deepLinkUrl,
-      adminInfo
+      adminInfo,
     };
   }
 
@@ -191,7 +197,11 @@ export class TwintService {
   }
 
   // Deep Link für Zahlungsrückkehr generieren
-  generatePaymentReturnLink(userId: string, amount: number, status: 'pending' | 'completed' | 'failed' = 'pending'): string {
+  generatePaymentReturnLink(
+    userId: string,
+    amount: number,
+    status: 'pending' | 'completed' | 'failed' = 'pending'
+  ): string {
     return `${APP_SCHEME}://payment-return?userId=${userId}&amount=${amount}&status=${status}`;
   }
 
@@ -204,7 +214,7 @@ export class TwintService {
         return {
           userId: queryParams?.userId ? String(queryParams.userId) : undefined,
           amount: queryParams?.amount ? parseFloat(String(queryParams.amount)) : undefined,
-          status: queryParams?.status ? String(queryParams.status) as 'pending' | 'completed' | 'failed' : undefined
+          status: queryParams?.status ? (String(queryParams.status) as 'pending' | 'completed' | 'failed') : undefined,
         };
       }
       return null;

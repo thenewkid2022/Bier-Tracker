@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  Modal,
-  Linking,
-  Share,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Modal, Linking, Share } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { TwintService, type TwintAdminConfig } from '../services/TwintService';
@@ -37,14 +27,17 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
 
   useEffect(() => {
     // Admin-Konfiguration laden
-    twintService.getAdminConfig().then(setAdminConfig).catch((error) => {
-      console.error('Fehler beim Laden der Admin-Konfiguration:', error);
-    });
-  }, []);
+    twintService
+      .getAdminConfig()
+      .then(setAdminConfig)
+      .catch((error) => {
+        console.error('Fehler beim Laden der Admin-Konfiguration:', error);
+      });
+  }, [twintService]);
 
   const handleSendPaymentRequest = () => {
     const numAmount = parseFloat(amount);
-    
+
     if (!twintService.validateAmount(numAmount)) {
       Alert.alert('Fehler', 'Bitte geben Sie einen gültigen Betrag ein (0.01 - 999999.99 CHF)');
       return;
@@ -56,19 +49,11 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
     }
 
     try {
-      const paymentRequest = twintService.generateUserPaymentRequest(
-        userId,
-        numAmount,
-        message || `Offene Rechnung für ${userName}`
-      );
+      // Validiert die Anfrage (wirft bei ungültigen Daten); QR-Code wird im Render aus denselben Daten erzeugt.
+      twintService.generateUserPaymentRequest(userId, numAmount, message || `Offene Rechnung für ${userName}`);
 
-             // QR-Code anzeigen
-       setShowQRCode(true);
-       
-       // Callback nicht sofort aufrufen - QR-Code soll sichtbar bleiben
-       // onPaymentRequestSent(numAmount, message);
-       
-       console.log(`TWINT-Zahlungsanfrage für ${userName}: ${numAmount} CHF generiert`);
+      // QR-Code anzeigen; Callback erst nach Abschluss, damit der QR-Code sichtbar bleibt.
+      setShowQRCode(true);
     } catch (error) {
       console.error('Fehler beim Generieren der TWINT-Zahlungsanfrage:', error);
       Alert.alert('Fehler', 'Zahlungsanfrage konnte nicht generiert werden.');
@@ -78,73 +63,25 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
   const openTwintApp = async () => {
     try {
       const numAmount = parseFloat(amount);
-      
-      console.log(`Versuche TWINT-App zu öffnen für ${userName}: ${numAmount} CHF`);
-      
+
       // Direkt versuchen TWINT-App zu öffnen
-      const success = await twintService.openTwintApp(
-        numAmount,
-        message || `Offene Rechnung für ${userName}`
-      );
-      
+      const success = await twintService.openTwintApp(numAmount, message || `Offene Rechnung für ${userName}`);
+
       if (success) {
-        Alert.alert(
-          'TWINT geöffnet', 
-          'TWINT-App wurde geöffnet. Bitte führen Sie die Zahlung durch.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                console.log(`TWINT-Zahlung für ${userName}: ${numAmount} CHF gestartet`);
-              }
-            }
-          ]
-        );
+        Alert.alert('TWINT geöffnet', 'TWINT-App wurde geöffnet. Bitte führen Sie die Zahlung durch.', [
+          { text: 'OK' },
+        ]);
       } else {
         // TWINT-App konnte nicht geöffnet werden - Browser als Fallback anbieten
-        Alert.alert(
-          'TWINT-App konnte nicht geöffnet werden',
-          'Möchten Sie TWINT im Browser öffnen?',
-          [
-            { text: 'Abbrechen', style: 'cancel' },
-            {
-              text: 'Im Browser öffnen',
-              onPress: async () => {
-                try {
-                  const webUrl = `https://www.twint.ch/pay?amount=${numAmount.toFixed(2)}&message=${encodeURIComponent(message || `Offene Rechnung für ${userName}`)}`;
-                  await Linking.openURL(webUrl);
-                  
-                  Alert.alert(
-                    'TWINT im Browser geöffnet',
-                    'TWINT wurde im Browser geöffnet. Bitte führen Sie die Zahlung durch.',
-                    [{ text: 'OK' }]
-                  );
-                } catch (webError) {
-                  console.error('Fehler beim Öffnen des Browsers:', webError);
-                  Alert.alert('Fehler', 'Browser konnte nicht geöffnet werden.');
-                }
-              }
-            }
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Fehler beim Öffnen von TWINT:', error);
-      
-      // Bei Fehler Browser als Fallback anbieten
-      Alert.alert(
-        'TWINT-App Fehler',
-        'TWINT konnte nicht geöffnet werden. Möchten Sie TWINT im Browser öffnen?',
-        [
+        Alert.alert('TWINT-App konnte nicht geöffnet werden', 'Möchten Sie TWINT im Browser öffnen?', [
           { text: 'Abbrechen', style: 'cancel' },
           {
             text: 'Im Browser öffnen',
             onPress: async () => {
               try {
-                const numAmount = parseFloat(amount);
                 const webUrl = `https://www.twint.ch/pay?amount=${numAmount.toFixed(2)}&message=${encodeURIComponent(message || `Offene Rechnung für ${userName}`)}`;
                 await Linking.openURL(webUrl);
-                
+
                 Alert.alert(
                   'TWINT im Browser geöffnet',
                   'TWINT wurde im Browser geöffnet. Bitte führen Sie die Zahlung durch.',
@@ -154,10 +91,36 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
                 console.error('Fehler beim Öffnen des Browsers:', webError);
                 Alert.alert('Fehler', 'Browser konnte nicht geöffnet werden.');
               }
+            },
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Fehler beim Öffnen von TWINT:', error);
+
+      // Bei Fehler Browser als Fallback anbieten
+      Alert.alert('TWINT-App Fehler', 'TWINT konnte nicht geöffnet werden. Möchten Sie TWINT im Browser öffnen?', [
+        { text: 'Abbrechen', style: 'cancel' },
+        {
+          text: 'Im Browser öffnen',
+          onPress: async () => {
+            try {
+              const numAmount = parseFloat(amount);
+              const webUrl = `https://www.twint.ch/pay?amount=${numAmount.toFixed(2)}&message=${encodeURIComponent(message || `Offene Rechnung für ${userName}`)}`;
+              await Linking.openURL(webUrl);
+
+              Alert.alert(
+                'TWINT im Browser geöffnet',
+                'TWINT wurde im Browser geöffnet. Bitte führen Sie die Zahlung durch.',
+                [{ text: 'OK' }]
+              );
+            } catch (webError) {
+              console.error('Fehler beim Öffnen des Browsers:', webError);
+              Alert.alert('Fehler', 'Browser konnte nicht geöffnet werden.');
             }
-          }
-        ]
-      );
+          },
+        },
+      ]);
     }
   };
 
@@ -165,10 +128,10 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
     try {
       const numAmount = parseFloat(amount);
       const paymentMessage = message || `Offene Rechnung für ${userName}`;
-      
+
       // TWINT-Zahlungsanfrage generieren
       const paymentUrl = twintService.generatePaymentRequest(numAmount, paymentMessage);
-      
+
       // Share-Dialog öffnen
       await Share.share({
         message: `TWINT-Zahlungsanfrage für ${userName}:\n\nBetrag: ${numAmount.toFixed(2)} CHF\nNachricht: ${paymentMessage}\n\nScannen Sie den QR-Code mit der TWINT-App oder verwenden Sie diesen Link:\n${paymentUrl}`,
@@ -182,10 +145,7 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
 
   return (
     <>
-      <TouchableOpacity
-        style={styles.paymentButton}
-        onPress={() => setIsModalVisible(true)}
-      >
+      <TouchableOpacity style={styles.paymentButton} onPress={() => setIsModalVisible(true)}>
         <MaterialIcons name="payment" size={20} color="#FFFFFF" />
         <Text style={styles.paymentButtonText}>TWINT Zahlungsanfrage</Text>
       </TouchableOpacity>
@@ -200,17 +160,12 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>TWINT-Zahlungsanfrage</Text>
-              <TouchableOpacity
-                onPress={() => setIsModalVisible(false)}
-                style={styles.closeButton}
-              >
+              <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.closeButton}>
                 <MaterialIcons name="close" size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.userInfo}>
-              Benutzer: {userName}
-            </Text>
+            <Text style={styles.userInfo}>Benutzer: {userName}</Text>
 
             {/* Admin-Konfiguration anzeigen */}
             {adminConfig && (adminConfig.iban || adminConfig.merchantName) && (
@@ -256,9 +211,7 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
                 multiline
                 maxLength={140}
               />
-              <Text style={styles.characterCount}>
-                {message.length}/140 Zeichen
-              </Text>
+              <Text style={styles.characterCount}>{message.length}/140 Zeichen</Text>
             </View>
 
             {showQRCode && (
@@ -275,69 +228,61 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
                     backgroundColor="#FFFFFF"
                   />
                 </View>
-                <Text style={styles.qrCodeInstructions}>
-                  Scannen Sie diesen QR-Code mit der TWINT-App
-                </Text>
+                <Text style={styles.qrCodeInstructions}>Scannen Sie diesen QR-Code mit der TWINT-App</Text>
               </View>
             )}
 
             <View style={styles.buttonContainer}>
-                             <TouchableOpacity
-                 style={styles.cancelButton}
-                 onPress={() => {
-                   // Callback aufrufen beim Schließen
-                   if (showQRCode) {
-                     onPaymentRequestSent(parseFloat(amount), message);
-                   }
-                   setIsModalVisible(false);
-                 }}
-               >
-                 <Text style={styles.cancelButtonText}>Abbrechen</Text>
-               </TouchableOpacity>
-              
-                                            {!showQRCode ? (
-                 <TouchableOpacity
-                   style={styles.sendButton}
-                   onPress={handleSendPaymentRequest}
-                 >
-                   <Text style={styles.sendButtonText}>Zahlungsanfrage senden</Text>
-                 </TouchableOpacity>
-               ) : (
-                 <>
-                   <TouchableOpacity
-                     style={styles.shareButton}
-                     onPress={() => {
-                       // QR-Code teilen
-                       shareQRCode();
-                     }}
-                   >
-                     <MaterialIcons name="share" size={20} color="#FFFFFF" />
-                     <Text style={styles.shareButtonText}>QR-Code teilen</Text>
-                   </TouchableOpacity>
-                   
-                   <TouchableOpacity
-                     style={styles.twintButton}
-                     onPress={openTwintApp}
-                   >
-                     <MaterialIcons name="open-in-new" size={20} color="#FFFFFF" />
-                     <Text style={styles.twintButtonText}>TWINT öffnen</Text>
-                   </TouchableOpacity>
-                   
-                   <TouchableOpacity
-                     style={styles.resetButton}
-                     onPress={() => {
-                       // Callback aufrufen bevor QR-Code versteckt wird
-                       onPaymentRequestSent(parseFloat(amount), message);
-                       setShowQRCode(false);
-                       setAmount(currentBalance < 0 ? Math.abs(currentBalance).toString() : '');
-                       setMessage('');
-                     }}
-                   >
-                     <MaterialIcons name="refresh" size={20} color="#FFFFFF" />
-                     <Text style={styles.resetButtonText}>Neue Anfrage</Text>
-                   </TouchableOpacity>
-                 </>
-               )}
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => {
+                  // Callback aufrufen beim Schließen
+                  if (showQRCode) {
+                    onPaymentRequestSent(parseFloat(amount), message);
+                  }
+                  setIsModalVisible(false);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Abbrechen</Text>
+              </TouchableOpacity>
+
+              {!showQRCode ? (
+                <TouchableOpacity style={styles.sendButton} onPress={handleSendPaymentRequest}>
+                  <Text style={styles.sendButtonText}>Zahlungsanfrage senden</Text>
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.shareButton}
+                    onPress={() => {
+                      // QR-Code teilen
+                      shareQRCode();
+                    }}
+                  >
+                    <MaterialIcons name="share" size={20} color="#FFFFFF" />
+                    <Text style={styles.shareButtonText}>QR-Code teilen</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.twintButton} onPress={openTwintApp}>
+                    <MaterialIcons name="open-in-new" size={20} color="#FFFFFF" />
+                    <Text style={styles.twintButtonText}>TWINT öffnen</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.resetButton}
+                    onPress={() => {
+                      // Callback aufrufen bevor QR-Code versteckt wird
+                      onPaymentRequestSent(parseFloat(amount), message);
+                      setShowQRCode(false);
+                      setAmount(currentBalance < 0 ? Math.abs(currentBalance).toString() : '');
+                      setMessage('');
+                    }}
+                  >
+                    <MaterialIcons name="refresh" size={20} color="#FFFFFF" />
+                    <Text style={styles.resetButtonText}>Neue Anfrage</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         </View>
@@ -443,12 +388,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-     buttonContainer: {
-     flexDirection: 'row',
-     gap: 12,
-     marginTop: 20,
-     flexWrap: 'wrap',
-   },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+    flexWrap: 'wrap',
+  },
   cancelButton: {
     flex: 1,
     backgroundColor: '#8E8E93',
@@ -505,37 +450,37 @@ const styles = StyleSheet.create({
     color: '#000000',
     marginBottom: 4,
   },
-     adminConfigLabel: {
-     fontWeight: '500',
-   },
-   resetButton: {
-     flex: 1,
-     flexDirection: 'row',
-     alignItems: 'center',
-     backgroundColor: '#FF9500', // Orange
-     padding: 16,
-     borderRadius: 8,
-     justifyContent: 'center',
-     gap: 8,
-   },
-       resetButtonText: {
-      color: '#FFFFFF',
-      fontWeight: '600',
-      fontSize: 16,
-    },
-    shareButton: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#007AFF', // iOS-Blau
-      padding: 16,
-      borderRadius: 8,
-      justifyContent: 'center',
-      gap: 8,
-    },
-    shareButtonText: {
-      color: '#FFFFFF',
-      fontWeight: '600',
-      fontSize: 16,
-    },
-  });
+  adminConfigLabel: {
+    fontWeight: '500',
+  },
+  resetButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF9500', // Orange
+    padding: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    gap: 8,
+  },
+  resetButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  shareButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF', // iOS-Blau
+    padding: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    gap: 8,
+  },
+  shareButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+});

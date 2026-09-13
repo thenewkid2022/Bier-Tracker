@@ -66,7 +66,9 @@ export type NewUserInput = z.infer<typeof NewUserInputSchema>;
 
 export const NewDrinkInputSchema = z.object({
   name: z.string().trim().min(1, 'Bitte geben Sie einen Getränkenamen ein.'),
-  price: z.coerce.number({ invalid_type_error: 'Preis muss eine Zahl sein.' }).positive('Preis muss größer als 0 sein.'),
+  price: z.coerce
+    .number({ invalid_type_error: 'Preis muss eine Zahl sein.' })
+    .positive('Preis muss größer als 0 sein.'),
   stock: z.coerce
     .number({ invalid_type_error: 'Bestand muss eine Zahl sein.' })
     .int('Bestand muss eine ganze Zahl sein.')

@@ -1,15 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  Modal,
-  ScrollView,
-  Platform,
-} from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Modal, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TwintService } from '../services/TwintService';
 import { getPlatformStyle, isAndroid } from '../utils/platformStyles';
@@ -20,11 +10,7 @@ interface TwintAdminConfigProps {
   onConfigSaved: () => void;
 }
 
-export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
-  isVisible,
-  onClose,
-  onConfigSaved,
-}) => {
+export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({ isVisible, onClose, onConfigSaved }) => {
   const [iban, setIban] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [defaultMessage, setDefaultMessage] = useState('');
@@ -33,17 +19,9 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
 
   const twintService = TwintService.getInstance();
 
-  useEffect(() => {
-    console.log('TwintAdminConfig useEffect - isVisible:', isVisible); // Debug-Log
-    if (isVisible) {
-      loadCurrentConfig();
-    }
-  }, [isVisible]);
-
-  const loadCurrentConfig = async () => {
+  const loadCurrentConfig = useCallback(async () => {
     try {
       const config = await twintService.getAdminConfig();
-      console.log('Geladene TWINT-Konfiguration:', config); // Debug-Log
       setIban(config?.iban || '');
       setPhoneNumber(config?.phoneNumber || '');
       setDefaultMessage(config?.defaultMessage || '');
@@ -51,7 +29,13 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
     } catch (error) {
       console.error('Fehler beim Laden der Konfiguration:', error);
     }
-  };
+  }, [twintService]);
+
+  useEffect(() => {
+    if (isVisible) {
+      void loadCurrentConfig();
+    }
+  }, [isVisible, loadCurrentConfig]);
 
   const handleSave = async () => {
     try {
@@ -64,7 +48,10 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
       }
 
       if (phoneNumber && !twintService.validatePhoneNumber(phoneNumber)) {
-        Alert.alert('Fehler', 'Bitte geben Sie eine gültige Schweizer Telefonnummer ein (z.B. +41 79 123 45 67 oder 079 123 45 67)');
+        Alert.alert(
+          'Fehler',
+          'Bitte geben Sie eine gültige Schweizer Telefonnummer ein (z.B. +41 79 123 45 67 oder 079 123 45 67)'
+        );
         return;
       }
 
@@ -81,19 +68,15 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
         merchantName: merchantName.trim() || undefined,
       });
 
-      Alert.alert(
-        'Erfolg',
-        'TWINT-Admin-Konfiguration wurde gespeichert.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              onConfigSaved();
-              onClose();
-            },
+      Alert.alert('Erfolg', 'TWINT-Admin-Konfiguration wurde gespeichert.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            onConfigSaved();
+            onClose();
           },
-        ]
-      );
+        },
+      ]);
     } catch (error) {
       console.error('Fehler beim Speichern der Konfiguration:', error);
       Alert.alert('Fehler', 'Konfiguration konnte nicht gespeichert werden.');
@@ -103,23 +86,19 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
   };
 
   const handleReset = () => {
-    Alert.alert(
-      'Konfiguration zurücksetzen',
-      'Möchten Sie wirklich alle TWINT-Einstellungen zurücksetzen?',
-      [
-        { text: 'Abbrechen', style: 'cancel' },
-        {
-          text: 'Zurücksetzen',
-          style: 'destructive',
-          onPress: () => {
-            setIban('');
-            setPhoneNumber('');
-            setDefaultMessage('');
-            setMerchantName('');
-          },
+    Alert.alert('Konfiguration zurücksetzen', 'Möchten Sie wirklich alle TWINT-Einstellungen zurücksetzen?', [
+      { text: 'Abbrechen', style: 'cancel' },
+      {
+        text: 'Zurücksetzen',
+        style: 'destructive',
+        onPress: () => {
+          setIban('');
+          setPhoneNumber('');
+          setDefaultMessage('');
+          setMerchantName('');
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const formatIBAN = (text: string) => {
@@ -146,12 +125,7 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
   };
 
   return (
-    <Modal
-      visible={isVisible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
+    <Modal visible={isVisible} animationType="slide" transparent={true} onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
@@ -161,8 +135,8 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView 
-            style={styles.scrollContent} 
+          <ScrollView
+            style={styles.scrollContent}
             showsVerticalScrollIndicator={true}
             contentContainerStyle={{ paddingBottom: 20 }}
           >
@@ -181,11 +155,9 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
                 autoCapitalize="characters"
                 maxLength={27}
               />
-              <Text style={styles.inputHint}>
-                Für direkte Überweisungen. Wird automatisch formatiert.
-              </Text>
+              <Text style={styles.inputHint}>Für direkte Überweisungen. Wird automatisch formatiert.</Text>
             </View>
-            
+
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Telefonnummer (optional)</Text>
               <TextInput
@@ -196,9 +168,7 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
                 keyboardType="phone-pad"
                 maxLength={16}
               />
-              <Text style={styles.inputHint}>
-                Für TWINT-Identifikation. Wird automatisch formatiert.
-              </Text>
+              <Text style={styles.inputHint}>Für TWINT-Identifikation. Wird automatisch formatiert.</Text>
             </View>
 
             <View style={styles.inputContainer}>
@@ -210,12 +180,8 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
                 placeholder="Getränke Tracker"
                 maxLength={140}
               />
-              <Text style={styles.inputHint}>
-                Wird allen Zahlungsanfragen vorangestellt. Max. 140 Zeichen.
-              </Text>
-              <Text style={styles.characterCount}>
-                {defaultMessage.length}/140 Zeichen
-              </Text>
+              <Text style={styles.inputHint}>Wird allen Zahlungsanfragen vorangestellt. Max. 140 Zeichen.</Text>
+              <Text style={styles.characterCount}>{defaultMessage.length}/140 Zeichen</Text>
             </View>
 
             <View style={styles.inputContainer}>
@@ -227,9 +193,7 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
                 placeholder="Ihr Name"
                 maxLength={50}
               />
-              <Text style={styles.inputHint}>
-                Wird in der App als Admin angezeigt.
-              </Text>
+              <Text style={styles.inputHint}>Wird in der App als Admin angezeigt.</Text>
             </View>
 
             <View style={styles.infoContainer}>
@@ -245,20 +209,18 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({
               <MaterialIcons name="refresh" size={20} color="#FF3B30" />
               <Text style={styles.resetButtonText}>Zurücksetzen</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
               <Text style={styles.cancelButtonText}>Abbrechen</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.saveButton, isLoading && styles.saveButtonDisabled]} 
+
+            <TouchableOpacity
+              style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
               onPress={handleSave}
               disabled={isLoading}
             >
               <MaterialIcons name="save" size={20} color="#FFFFFF" />
-              <Text style={styles.saveButtonText}>
-                {isLoading ? 'Speichern...' : 'Speichern'}
-              </Text>
+              <Text style={styles.saveButtonText}>{isLoading ? 'Speichern...' : 'Speichern'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -285,10 +247,12 @@ const styles = StyleSheet.create({
     height: '90%',
     zIndex: 1001,
     shadowColor: isAndroid ? undefined : '#000',
-    shadowOffset: isAndroid ? undefined : {
-      width: 0,
-      height: 10,
-    },
+    shadowOffset: isAndroid
+      ? undefined
+      : {
+          width: 0,
+          height: 10,
+        },
     shadowOpacity: isAndroid ? undefined : 0.25,
     shadowRadius: isAndroid ? undefined : 10,
     elevation: isAndroid ? 24 : 5,

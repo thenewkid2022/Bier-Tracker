@@ -1,12 +1,5 @@
 import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -37,13 +30,13 @@ export const ProfileScreen: React.FC = () => {
     }))
   );
 
-  const selectedUser = selectedUserId ? users.find((u) => u.id === selectedUserId) ?? null : null;
+  const selectedUser = selectedUserId ? (users.find((u) => u.id === selectedUserId) ?? null) : null;
   const consumptions = profileConsumptions;
   const totalSpent = profileTotalSpent;
 
   useEffect(() => {
     hydrate().catch((error) => console.error('Fehler beim Hydraten:', error));
-  }, []);
+  }, [hydrate]);
 
   // Daten neu laden, wenn der Screen fokussiert wird
   useFocusEffect(
@@ -60,7 +53,7 @@ export const ProfileScreen: React.FC = () => {
         }
       };
       run();
-    }, [selectedUserId])
+    }, [selectedUserId, hydrate, loadProfile])
   );
 
   const loadUserData = async (userId: string) => {
@@ -73,7 +66,7 @@ export const ProfileScreen: React.FC = () => {
 
   const resetBalance = async () => {
     if (!selectedUser) return;
-    
+
     Alert.alert(
       'Balance zurücksetzen',
       `Möchten Sie die Balance von ${selectedUser.name} wirklich auf 0 zurücksetzen?`,
@@ -97,29 +90,25 @@ export const ProfileScreen: React.FC = () => {
   };
 
   const deleteConsumption = async (consumptionId: string) => {
-    Alert.alert(
-      'Einkauf löschen',
-      'Möchten Sie diesen Einkauf wirklich löschen?',
-      [
-        { text: 'Abbrechen', style: 'cancel' },
-        {
-          text: 'Löschen',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteConsumptionAction(consumptionId);
-              if (selectedUser) {
-                await loadUserData(selectedUser.id);
-              }
-              Alert.alert('Erfolg', 'Einkauf wurde gelöscht.');
-            } catch (error) {
-              console.error('Fehler beim Löschen des Einkaufs:', error);
-              Alert.alert('Fehler', 'Einkauf konnte nicht gelöscht werden.');
+    Alert.alert('Einkauf löschen', 'Möchten Sie diesen Einkauf wirklich löschen?', [
+      { text: 'Abbrechen', style: 'cancel' },
+      {
+        text: 'Löschen',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteConsumptionAction(consumptionId);
+            if (selectedUser) {
+              await loadUserData(selectedUser.id);
             }
-          },
+            Alert.alert('Erfolg', 'Einkauf wurde gelöscht.');
+          } catch (error) {
+            console.error('Fehler beim Löschen des Einkaufs:', error);
+            Alert.alert('Fehler', 'Einkauf konnte nicht gelöscht werden.');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   if (!selectedUser) {
@@ -142,8 +131,8 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.userSelectorContainer}>
           <View style={styles.selectorHeader}>
             <Text style={styles.selectorTitle}>Benutzer auswählen:</Text>
-            <TouchableOpacity 
-              style={styles.refreshButton} 
+            <TouchableOpacity
+              style={styles.refreshButton}
               onPress={() => selectedUser && loadUserData(selectedUser.id)}
             >
               <MaterialIcons name="refresh" size={20} color="#007AFF" />
@@ -153,16 +142,10 @@ export const ProfileScreen: React.FC = () => {
             {users.map((user) => (
               <TouchableOpacity
                 key={user.id}
-                style={[
-                  styles.userSelectorItem,
-                  selectedUser.id === user.id && styles.userSelectorItemSelected
-                ]}
+                style={[styles.userSelectorItem, selectedUser.id === user.id && styles.userSelectorItemSelected]}
                 onPress={() => handleUserSelect(user)}
               >
-                <Text style={[
-                  styles.userSelectorText,
-                  selectedUser.id === user.id && styles.userSelectorTextSelected
-                ]}>
+                <Text style={[styles.userSelectorText, selectedUser.id === user.id && styles.userSelectorTextSelected]}>
                   {user.name}
                 </Text>
               </TouchableOpacity>
@@ -182,15 +165,10 @@ export const ProfileScreen: React.FC = () => {
         {/* Statistiken */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={[
-              styles.statValue,
-              selectedUser.balance < 0 && styles.negativeBalance
-            ]}>
+            <Text style={[styles.statValue, selectedUser.balance < 0 && styles.negativeBalance]}>
               CHF {selectedUser.balance.toFixed(2)}
             </Text>
-            <Text style={styles.statLabel}>
-              {selectedUser.balance >= 0 ? 'Aktuelle Balance' : 'Schuldenstand'}
-            </Text>
+            <Text style={styles.statLabel}>{selectedUser.balance >= 0 ? 'Aktuelle Balance' : 'Schuldenstand'}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{selectedUser.monthlyCount}</Text>
@@ -206,9 +184,7 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={resetBalance}>
             <MaterialIcons name="refresh" size={24} color="#FF3B30" />
-            <Text style={[styles.actionButtonText, { color: '#FF3B30' }]}>
-              Balance zurücksetzen
-            </Text>
+            <Text style={[styles.actionButtonText, { color: '#FF3B30' }]}>Balance zurücksetzen</Text>
           </TouchableOpacity>
         </View>
 
@@ -221,15 +197,11 @@ export const ProfileScreen: React.FC = () => {
             consumptions.slice(0, 10).map((consumption) => (
               <View key={consumption.id} style={styles.consumptionItem}>
                 <View style={styles.consumptionInfo}>
-                  <Text style={styles.consumptionDrink}>
-                    {consumption.drinkName}
-                  </Text>
+                  <Text style={styles.consumptionDrink}>{consumption.drinkName}</Text>
                   <Text style={styles.consumptionDate}>
                     {new Date(consumption.timestamp).toLocaleDateString('de-CH')}
                   </Text>
-                  <Text style={styles.consumptionPrice}>
-                    CHF {consumption.price.toFixed(2)}
-                  </Text>
+                  <Text style={styles.consumptionPrice}>CHF {consumption.price.toFixed(2)}</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.deleteConsumptionButton}

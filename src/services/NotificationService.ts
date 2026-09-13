@@ -7,14 +7,14 @@ export class NotificationService {
     if (Device.isDevice) {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
-      
+
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
-      
+
       if (finalStatus !== 'granted') {
-        console.log('Benachrichtigungen wurden nicht erlaubt!');
+        console.warn('Benachrichtigungen wurden nicht erlaubt!');
         return;
       }
     }
@@ -37,7 +37,7 @@ export class NotificationService {
   }: {
     title: string;
     body: string;
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
     trigger?: Notifications.NotificationTriggerInput | null;
   }): Promise<string> {
     return await Notifications.scheduleNotificationAsync({
@@ -57,7 +57,7 @@ export class NotificationService {
   }: {
     title: string;
     body: string;
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
   }): Promise<void> {
     await Notifications.scheduleNotificationAsync({
       content: {

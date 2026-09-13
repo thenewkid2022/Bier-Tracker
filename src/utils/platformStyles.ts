@@ -95,4 +95,4 @@ export const getPlatformStyle = (styleKey: StyleKey): ViewStyle => {
   };
 };
 
-export const getPlatformValue = <T,>(iosValue: T, androidValue: T): T => (isIOS ? iosValue : androidValue);
+export const getPlatformValue = <T>(iosValue: T, androidValue: T): T => (isIOS ? iosValue : androidValue);

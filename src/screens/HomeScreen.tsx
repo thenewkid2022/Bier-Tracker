@@ -20,19 +20,18 @@ import type { Drink } from '../domain/schemas';
 const { width } = Dimensions.get('window');
 
 export const HomeScreen: React.FC = () => {
-  const { users, drinks, selectedUserId, hydrate, selectUser, purchaseDrink, isHydrating } =
-    useAppStore(
-      useShallow((s) => ({
-        users: s.users,
-        drinks: s.drinks,
-        selectedUserId: s.selectedUserId,
-        hydrate: s.hydrate,
-        selectUser: s.selectUser,
-        purchaseDrink: s.purchaseDrink,
-        isHydrating: s.isHydrating,
-      }))
-    );
-  const selectedUser = selectedUserId ? users.find((u) => u.id === selectedUserId) ?? null : null;
+  const { users, drinks, selectedUserId, hydrate, selectUser, purchaseDrink, isHydrating } = useAppStore(
+    useShallow((s) => ({
+      users: s.users,
+      drinks: s.drinks,
+      selectedUserId: s.selectedUserId,
+      hydrate: s.hydrate,
+      selectUser: s.selectUser,
+      purchaseDrink: s.purchaseDrink,
+      isHydrating: s.isHydrating,
+    }))
+  );
+  const selectedUser = selectedUserId ? (users.find((u) => u.id === selectedUserId) ?? null) : null;
   const [isWide, setIsWide] = useState(width >= 900);
   const [quantityModalVisible, setQuantityModalVisible] = useState(false);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
@@ -45,7 +44,7 @@ export const HomeScreen: React.FC = () => {
     });
 
     return () => subscription?.remove();
-  }, []);
+  }, [hydrate]);
 
   const refreshData = async () => {
     await hydrate();
@@ -77,19 +76,16 @@ export const HomeScreen: React.FC = () => {
 
     try {
       const newBalance = selectedUser.balance - totalPrice;
-      const balanceMessage = newBalance < 0
-        ? `Ihr offener Betrag: CHF ${Math.abs(newBalance).toFixed(2)}`
-        : `Ihre Balance: CHF ${newBalance.toFixed(2)}`;
+      const balanceMessage =
+        newBalance < 0
+          ? `Ihr offener Betrag: CHF ${Math.abs(newBalance).toFixed(2)}`
+          : `Ihre Balance: CHF ${newBalance.toFixed(2)}`;
 
       await purchaseDrink({ userId: selectedUser.id, drinkId: selectedDrink.id, quantity });
-      
-      Alert.alert(
-        'Erfolg', 
-        `${quantity}x ${selectedDrink.name} wurde erfolgreich gekauft!\n\n${balanceMessage}`,
-        [
-          { text: 'OK', style: 'default' }
-        ]
-      );
+
+      Alert.alert('Erfolg', `${quantity}x ${selectedDrink.name} wurde erfolgreich gekauft!\n\n${balanceMessage}`, [
+        { text: 'OK', style: 'default' },
+      ]);
 
       // Modal schließen
       setQuantityModalVisible(false);
@@ -109,22 +105,13 @@ export const HomeScreen: React.FC = () => {
           {users.map((user) => (
             <TouchableOpacity
               key={user.id}
-              style={[
-                styles.userItem,
-                selectedUser?.id === user.id && styles.userItemSelected,
-              ]}
+              style={[styles.userItem, selectedUser?.id === user.id && styles.userItemSelected]}
               onPress={() => selectUser(user.id)}
             >
-              <Text style={[
-                styles.userName,
-                selectedUser?.id === user.id && styles.userNameSelected,
-              ]}>
+              <Text style={[styles.userName, selectedUser?.id === user.id && styles.userNameSelected]}>
                 {user.name}
               </Text>
-              <Text style={[
-                styles.userBalance,
-                user.balance < 0 && styles.negativeBalance
-              ]}>
+              <Text style={[styles.userBalance, user.balance < 0 && styles.negativeBalance]}>
                 CHF {user.balance.toFixed(2)}
               </Text>
             </TouchableOpacity>
@@ -138,36 +125,22 @@ export const HomeScreen: React.FC = () => {
     <View style={styles.drinksContainer}>
       <View style={styles.drinksHeader}>
         <Text style={styles.sectionTitle}>Verfügbare Getränke</Text>
-        <TouchableOpacity 
-          style={styles.refreshButton} 
-          onPress={refreshData}
-          disabled={isHydrating}
-        >
-          <MaterialIcons 
-            name="refresh" 
-            size={20} 
-            color={isHydrating ? "#8E8E93" : "#007AFF"} 
-          />
+        <TouchableOpacity style={styles.refreshButton} onPress={refreshData} disabled={isHydrating}>
+          <MaterialIcons name="refresh" size={20} color={isHydrating ? '#8E8E93' : '#007AFF'} />
         </TouchableOpacity>
       </View>
       <View style={[styles.drinksGrid, isWide && styles.drinksGridWide]}>
         {drinks.map((drink) => (
           <TouchableOpacity
             key={drink.id}
-            style={[
-              styles.drinkItem,
-              drink.stock <= 0 && styles.drinkItemOutOfStock,
-            ]}
+            style={[styles.drinkItem, drink.stock <= 0 && styles.drinkItemOutOfStock]}
             onPress={() => handleDrinkPurchase(drink)}
             disabled={drink.stock <= 0}
           >
             <DrinkIcon iconKey={drink.iconKey} size={40} />
             <Text style={styles.drinkName}>{drink.name}</Text>
             <Text style={styles.drinkPrice}>CHF {drink.price.toFixed(2)}</Text>
-            <Text style={[
-              styles.drinkStock,
-              drink.stock <= 5 && styles.drinkStockLow
-            ]}>
+            <Text style={[styles.drinkStock, drink.stock <= 5 && styles.drinkStockLow]}>
               {drink.stock <= 0 ? 'Ausverkauft' : `${drink.stock} verfügbar`}
             </Text>
           </TouchableOpacity>
@@ -187,36 +160,31 @@ export const HomeScreen: React.FC = () => {
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Menge auswählen</Text>
-            <TouchableOpacity 
-              onPress={() => setQuantityModalVisible(false)}
-              style={styles.closeButton}
-            >
+            <TouchableOpacity onPress={() => setQuantityModalVisible(false)} style={styles.closeButton}>
               <MaterialIcons name="close" size={24} color="#000000" />
             </TouchableOpacity>
           </View>
-          
+
           {selectedDrink && (
             <View style={styles.drinkInfoContainer}>
               <DrinkIcon iconKey={selectedDrink.iconKey} size={60} />
               <Text style={styles.drinkNameLarge}>{selectedDrink.name}</Text>
               <Text style={styles.drinkPriceLarge}>CHF {selectedDrink.price.toFixed(2)}</Text>
-              <Text style={styles.drinkStockInfo}>
-                {selectedDrink.stock} verfügbar
-              </Text>
+              <Text style={styles.drinkStockInfo}>{selectedDrink.stock} verfügbar</Text>
             </View>
           )}
 
           <View style={styles.quantityContainer}>
             <Text style={styles.quantityLabel}>Menge:</Text>
             <View style={styles.quantityInputContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.quantityButton}
                 onPress={() => setSelectedQuantity(Math.max(1, selectedQuantity - 1))}
                 disabled={selectedQuantity <= 1}
               >
                 <MaterialIcons name="remove" size={20} color="#007AFF" />
               </TouchableOpacity>
-              
+
               <TextInput
                 style={styles.quantityInput}
                 value={selectedQuantity.toString()}
@@ -228,8 +196,8 @@ export const HomeScreen: React.FC = () => {
                 textAlign="center"
                 maxLength={2}
               />
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.quantityButton}
                 onPress={() => setSelectedQuantity(Math.min(selectedDrink?.stock || 1, selectedQuantity + 1, 10))}
                 disabled={selectedQuantity >= Math.min(selectedDrink?.stock || 1, 10)}
@@ -247,17 +215,11 @@ export const HomeScreen: React.FC = () => {
           )}
 
           <View style={styles.modalButtons}>
-            <TouchableOpacity 
-              style={styles.cancelModalButton}
-              onPress={() => setQuantityModalVisible(false)}
-            >
+            <TouchableOpacity style={styles.cancelModalButton} onPress={() => setQuantityModalVisible(false)}>
               <Text style={styles.cancelModalButtonText}>Abbrechen</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.confirmButton}
-              onPress={handleConfirmPurchase}
-            >
+
+            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmPurchase}>
               <Text style={styles.confirmButtonText}>Kaufen</Text>
             </TouchableOpacity>
           </View>
@@ -270,7 +232,7 @@ export const HomeScreen: React.FC = () => {
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {renderUserSelector()}
       {renderDrinksGrid()}
-      
+
       {!selectedUser && (
         <View style={styles.noUserContainer}>
           <Text style={styles.noUserTitle}>Kein Benutzer ausgewählt</Text>
@@ -279,13 +241,11 @@ export const HomeScreen: React.FC = () => {
           </Text>
         </View>
       )}
-      
+
       {selectedUser && drinks.length === 0 && (
         <View style={styles.noDrinksContainer}>
           <Text style={styles.noDrinksTitle}>Keine Getränke verfügbar</Text>
-          <Text style={styles.noDrinksText}>
-            Bitte fügen Sie über den Admin-Bereich Getränke hinzu.
-          </Text>
+          <Text style={styles.noDrinksText}>Bitte fügen Sie über den Admin-Bereich Getränke hinzu.</Text>
         </View>
       )}
 

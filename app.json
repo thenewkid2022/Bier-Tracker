@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#00D4AA"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thenewkid2022.bierlounge-tracker",
@@ -28,9 +26,7 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLName": "Getränke Tracker Payment Return",
-            "CFBundleURLSchemes": [
-              "getraenke-tracker"
-            ]
+            "CFBundleURLSchemes": ["getraenke-tracker"]
           }
         ],
         "ITSAppUsesNonExemptEncryption": false
@@ -42,20 +38,13 @@
       "backgroundColor": "#00D4AA"
     },
     "scheme": "getraenke-tracker",
-    "plugins": [
-      "expo-router",
-      "expo-secure-store",
-      "expo-notifications"
-    ],
+    "plugins": ["expo-router", "expo-secure-store", "expo-notifications"],
     "extra": {
       "eas": {
         "projectId": "4c2cd3f1-77ff-4932-8bbe-6d0d0e5d3435"
       }
     },
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "owner": "ragnarus"
   }
 }
