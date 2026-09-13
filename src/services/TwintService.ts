@@ -3,13 +3,10 @@ import * as Linking from 'expo-linking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { DatabaseService } from './DatabaseService';
+import { TwintAdminConfigSchema, type TwintAdminConfig } from '../domain/schemas';
 
-interface TwintAdminConfig {
-  iban?: string;
-  phoneNumber?: string;
-  defaultMessage?: string;
-  merchantName?: string;
-}
+export type { TwintAdminConfig };
+export type PaymentReturnData = { userId?: string; amount?: number; status?: string };
 
 const APP_SCHEME = 'getraenke-tracker';
 const TWINT_CONFIG_KEY = 'twint_admin_config';
@@ -40,7 +37,8 @@ export class TwintService {
         SecureStore.getItemAsync(TWINT_IBAN_KEY),
       ]);
       if (config) {
-        this.adminConfig = { ...JSON.parse(config), iban: iban ?? undefined };
+        const parsed = TwintAdminConfigSchema.safeParse(JSON.parse(config));
+        this.adminConfig = { ...(parsed.success ? parsed.data : {}), iban: iban ?? undefined };
       } else if (iban) {
         this.adminConfig = { iban };
       }
@@ -198,7 +196,7 @@ export class TwintService {
   }
 
   // Zahlungsstatus aus Deep Link extrahieren
-  parsePaymentReturnLink(url: string): { userId?: string; amount?: number; status?: string } | null {
+  parsePaymentReturnLink(url: string): PaymentReturnData | null {
     try {
       const parsed = Linking.parse(url);
       if (parsed.scheme === APP_SCHEME && parsed.hostname === 'payment-return') {

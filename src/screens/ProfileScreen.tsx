@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useAppStore } from '../state/appStore';
 import { useFocusEffect } from '@react-navigation/native';
+import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '../state/appStore';
+import type { UserProfile } from '../domain/schemas';
 
 export const ProfileScreen: React.FC = () => {
   const {
@@ -22,8 +24,8 @@ export const ProfileScreen: React.FC = () => {
     loadProfile,
     resetBalance: resetBalanceAction,
     deleteConsumption: deleteConsumptionAction,
-  } =
-    useAppStore((s) => ({
+  } = useAppStore(
+    useShallow((s) => ({
       users: s.users,
       selectedUserId: s.selectedUserId,
       profileConsumptions: s.profileConsumptions,
@@ -32,7 +34,8 @@ export const ProfileScreen: React.FC = () => {
       loadProfile: s.loadProfile,
       resetBalance: s.resetBalance,
       deleteConsumption: s.deleteConsumption,
-    }));
+    }))
+  );
 
   const selectedUser = selectedUserId ? users.find((u) => u.id === selectedUserId) ?? null : null;
   const consumptions = profileConsumptions;
@@ -60,18 +63,11 @@ export const ProfileScreen: React.FC = () => {
     }, [selectedUserId])
   );
 
-  const loadUsers = async () => {
-    await hydrate();
-    if (selectedUserId) {
-      await loadProfile(selectedUserId);
-    }
-  };
-
   const loadUserData = async (userId: string) => {
     await loadProfile(userId);
   };
 
-  const handleUserSelect = async (user: any) => {
+  const handleUserSelect = async (user: UserProfile) => {
     await loadUserData(user.id);
   };
 

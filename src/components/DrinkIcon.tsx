@@ -8,8 +8,10 @@ interface DrinkIconProps {
   color?: string;
 }
 
-const getIconName = (iconKey: string): string => {
-  const iconMap: Record<string, string> = {
+type MaterialIconName = keyof typeof MaterialIcons.glyphMap;
+
+const getIconName = (iconKey: string): MaterialIconName => {
+  const iconMap: Record<string, MaterialIconName> = {
     beer: 'sports-bar',        // 🍺 Bierglas (passender)
     wine: 'wine-bar',          // 🍷 Weinglas (passender)
     soda: 'local-cafe',        // ☕ Limonade/Softdrink
@@ -32,7 +34,7 @@ export const DrinkIcon: React.FC<DrinkIconProps> = ({
   return (
     <View style={styles.container}>
       <MaterialIcons 
-        name={getIconName(iconKey) as any} 
+        name={getIconName(iconKey)} 
         size={size} 
         color={color} 
       />

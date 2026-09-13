@@ -1,31 +1,15 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+﻿import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SQLite from 'expo-sqlite';
-
-type UserProfile = {
-  id: string;
-  name: string;
-  email?: string;
-  balance: number;
-  monthlyCount: number;
-};
-
-type Drink = {
-  id: string;
-  name: string;
-  price: number;
-  stock: number;
-  iconKey: string;
-};
-
-type Consumption = {
-  id: string;
-  userId: string;
-  drinkId: string;
-  timestamp: number;
-  price: number;
-  quantity?: number;
-  drinkName?: string;
-};
+import {
+  ConsumptionSchema,
+  DrinkSchema,
+  UserProfileSchema,
+  parseArraySafe,
+  type Consumption,
+  type Drink,
+  type UserProfile,
+} from '../domain/schemas';
+import { generateId } from '../utils/id';
 
 const STORAGE_KEYS = {
   users: 'users',
@@ -42,7 +26,7 @@ export class DatabaseService {
   private useSQLite = false;
   private didMigrateFromAsyncStorage = false;
 
-  // In-Memory-Daten für bessere Performance
+  // In-Memory-Daten fÃ¼r bessere Performance
   private users: UserProfile[] = [];
   private drinks: Drink[] = [];
   private consumptions: Consumption[] = [];
@@ -51,7 +35,7 @@ export class DatabaseService {
     this.ready = this.initializeDatabase();
   }
 
-  // Singleton-Pattern für Datenkonsistenz
+  // Singleton-Pattern fÃ¼r Datenkonsistenz
   public static getInstance(): DatabaseService {
     if (!DatabaseService.instance) {
       DatabaseService.instance = new DatabaseService();
@@ -115,7 +99,7 @@ export class DatabaseService {
         CREATE INDEX IF NOT EXISTS idx_consumptions_drinkId ON consumptions(drinkId);
       `);
     } catch (error) {
-      // Fallback auf AsyncStorage, falls SQLite auf dem jeweiligen Laufzeit-Target nicht verfügbar ist.
+      // Fallback auf AsyncStorage, falls SQLite auf dem jeweiligen Laufzeit-Target nicht verfÃ¼gbar ist.
       console.error('SQLite initialisieren fehlgeschlagen, Fallback auf AsyncStorage:', error);
       this.sqliteDb = null;
       this.useSQLite = false;
@@ -165,36 +149,48 @@ export class DatabaseService {
             }>('SELECT id, userId, drinkId, timestamp, price, quantity FROM consumptions'),
           ]);
 
-          this.users = users.map((u) => ({
-            id: u.id,
-            name: u.name,
-            email: u.email ?? undefined,
-            balance: Number(u.balance),
-            monthlyCount: Number(u.monthlyCount),
-          }));
+          this.users = parseArraySafe(
+            UserProfileSchema,
+            users.map((u) => ({
+              id: u.id,
+              name: u.name,
+              email: u.email ?? undefined,
+              balance: Number(u.balance),
+              monthlyCount: Number(u.monthlyCount),
+            })),
+            'users'
+          );
 
-          this.drinks = drinks.map((d) => ({
-            id: d.id,
-            name: d.name,
-            price: Number(d.price),
-            stock: Number(d.stock),
-            iconKey: d.iconKey,
-          }));
+          this.drinks = parseArraySafe(
+            DrinkSchema,
+            drinks.map((d) => ({
+              id: d.id,
+              name: d.name,
+              price: Number(d.price),
+              stock: Number(d.stock),
+              iconKey: d.iconKey,
+            })),
+            'drinks'
+          );
 
-          this.consumptions = consumptions.map((c) => ({
-            id: c.id,
-            userId: c.userId,
-            drinkId: c.drinkId,
-            timestamp: Number(c.timestamp),
-            price: Number(c.price),
-            quantity: c.quantity == null ? undefined : Number(c.quantity),
-          }));
+          this.consumptions = parseArraySafe(
+            ConsumptionSchema,
+            consumptions.map((c) => ({
+              id: c.id,
+              userId: c.userId,
+              drinkId: c.drinkId,
+              timestamp: Number(c.timestamp),
+              price: Number(c.price),
+              quantity: c.quantity == null ? undefined : Number(c.quantity),
+            })),
+            'consumptions'
+          );
 
           return;
         }
       }
 
-      // SQLite ist leer oder nicht verfügbar: lade von AsyncStorage (Migration).
+      // SQLite ist leer oder nicht verfÃ¼gbar: lade von AsyncStorage (Migration).
       const [storedUsers, storedDrinks, storedConsumptions] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.users),
         AsyncStorage.getItem(STORAGE_KEYS.drinks),
@@ -207,17 +203,24 @@ export class DatabaseService {
       }
 
       if (storedUsers) {
-        this.users = JSON.parse(storedUsers) as UserProfile[];
+        this.users = parseArraySafe(UserProfileSchema, JSON.parse(storedUsers), 'users');
       }
       if (storedDrinks) {
-        this.drinks = JSON.parse(storedDrinks) as Drink[];
+        this.drinks = parseArraySafe(DrinkSchema, JSON.parse(storedDrinks), 'drinks');
       }
       if (storedConsumptions) {
-        const parsed = JSON.parse(storedConsumptions) as Array<Consumption & { timestamp: number | string }>;
-        this.consumptions = parsed.map((entry) => ({
-          ...entry,
-          timestamp: typeof entry.timestamp === 'string' ? Date.parse(entry.timestamp) : entry.timestamp,
-        }));
+        // Ã„ltere Versionen haben ISO-Strings statt Unix-Millisekunden gespeichert.
+        const raw: unknown = JSON.parse(storedConsumptions);
+        const normalized = Array.isArray(raw)
+          ? raw.map((entry: unknown) => {
+              if (entry && typeof entry === 'object' && 'timestamp' in entry) {
+                const ts = (entry as { timestamp: unknown }).timestamp;
+                return { ...entry, timestamp: typeof ts === 'string' ? Date.parse(ts) : ts };
+              }
+              return entry;
+            })
+          : [];
+        this.consumptions = parseArraySafe(ConsumptionSchema, normalized, 'consumptions');
       }
     } catch (error) {
       console.error('Fehler beim Laden der gespeicherten Daten:', error);
@@ -287,21 +290,21 @@ export class DatabaseService {
   private async insertDemoData() {
     const demoUsers = [
       {
-        id: this.generateId(),
+        id: generateId(),
         name: 'Max Mustermann',
         email: 'max@example.com',
         balance: 0,
         monthlyCount: 12,
       },
       {
-        id: this.generateId(),
+        id: generateId(),
         name: 'Anna Schmidt',
         email: 'anna@example.com',
         balance: -18.75,
         monthlyCount: 8,
       },
       {
-        id: this.generateId(),
+        id: generateId(),
         name: 'Tom Weber',
         email: 'tom@example.com',
         balance: -32.0,
@@ -311,42 +314,42 @@ export class DatabaseService {
 
     const demoDrinks = [
       {
-        id: this.generateId(),
+        id: generateId(),
         name: 'Bier',
         price: 3.50,
         stock: 50,
         iconKey: 'beer',
       },
       {
-        id: this.generateId(),
+        id: generateId(),
         name: 'Wein',
         price: 4.50,
         stock: 30,
         iconKey: 'wine',
       },
       {
-        id: this.generateId(),
+        id: generateId(),
         name: 'Cocktail',
         price: 6.00,
         stock: 20,
         iconKey: 'cocktail',
       },
       {
-        id: this.generateId(),
+        id: generateId(),
         name: 'Softdrink',
         price: 2.50,
         stock: 40,
         iconKey: 'soda',
       },
       {
-        id: this.generateId(),
+        id: generateId(),
         name: 'Kaffee',
         price: 2.00,
         stock: 60,
         iconKey: 'coffee',
       },
       {
-        id: this.generateId(),
+        id: generateId(),
         name: 'Tee',
         price: 1.50,
         stock: 45,
@@ -354,34 +357,34 @@ export class DatabaseService {
       }
     ];
 
-    // Demo-Benutzer einfügen
+    // Demo-Benutzer einfÃ¼gen
     for (const user of demoUsers) {
       await this.saveUserProfile(user);
     }
 
-    // Demo-Getränke einfügen
+    // Demo-GetrÃ¤nke einfÃ¼gen
     for (const drink of demoDrinks) {
       await this.saveDrink(drink);
     }
 
-    // Demo-Konsum einfügen
+    // Demo-Konsum einfÃ¼gen
     const demoConsumptions = [
       {
-        id: this.generateId(),
+        id: generateId(),
         userId: demoUsers[0].id,
         drinkId: demoDrinks[0].id,
         timestamp: Date.now() - 86400000,
         price: 3.50,
       },
       {
-        id: this.generateId(),
+        id: generateId(),
         userId: demoUsers[1].id,
         drinkId: demoDrinks[2].id,
         timestamp: Date.now() - 43200000,
         price: 6.00,
       },
       {
-        id: this.generateId(),
+        id: generateId(),
         userId: demoUsers[0].id,
         drinkId: demoDrinks[1].id,
         timestamp: Date.now() - 21600000,
@@ -393,11 +396,7 @@ export class DatabaseService {
       await this.addConsumption(consumption);
     }
 
-    console.log('Demo-Daten erfolgreich eingefügt');
-  }
-
-  private generateId(): string {
-    return Date.now().toString() + Math.random().toString(36).slice(2, 11);
+    console.log('Demo-Daten erfolgreich eingefÃ¼gt');
   }
 
   // Benutzer-Methoden
@@ -432,7 +431,7 @@ export class DatabaseService {
 
   async deleteUser(userId: string): Promise<void> {
     await this.ensureReady();
-    // Beim Löschen eines Users müssen wir den Bestand der zugehörigen Konsum-Einträge zurückrollen.
+    // Beim LÃ¶schen eines Users mÃ¼ssen wir den Bestand der zugehÃ¶rigen Konsum-EintrÃ¤ge zurÃ¼ckrollen.
     const consumptionsToDelete = this.consumptions.filter((c) => c.userId === userId);
     const affectedDrinkIds = new Set<string>();
     for (const c of consumptionsToDelete) {
@@ -447,7 +446,7 @@ export class DatabaseService {
     this.consumptions = this.consumptions.filter((c) => c.userId !== userId);
 
     if (this.useSQLite && this.sqliteDb) {
-      // Persistiere Bestandskorrekturen auf betroffenen Getränken.
+      // Persistiere Bestandskorrekturen auf betroffenen GetrÃ¤nken.
       for (const drinkId of affectedDrinkIds) {
         const drink = this.drinks.find((d) => d.id === drinkId);
         if (!drink) continue;
@@ -462,7 +461,7 @@ export class DatabaseService {
     await this.saveToStorage();
   }
 
-  // Getränke-Methoden
+  // GetrÃ¤nke-Methoden
   async saveDrink(drink: Drink): Promise<void> {
     await this.ensureReady();
     const existingIndex = this.drinks.findIndex(d => d.id === drink.id);
@@ -494,7 +493,7 @@ export class DatabaseService {
 
   async deleteDrink(drinkId: string): Promise<void> {
     await this.ensureReady();
-    // Beim Löschen eines Getränks müssen wir die Balance/Monatsstatistik der betroffenen Users zurückrollen.
+    // Beim LÃ¶schen eines GetrÃ¤nks mÃ¼ssen wir die Balance/Monatsstatistik der betroffenen Users zurÃ¼ckrollen.
     const consumptionsToDelete = this.consumptions.filter((c) => c.drinkId === drinkId);
     const affectedUserIds = new Set<string>();
     for (const c of consumptionsToDelete) {
@@ -581,7 +580,7 @@ export class DatabaseService {
       .filter(c => c.userId === userId)
       .map(c => ({
         ...c,
-        drinkName: this.drinks.find(d => d.id === c.drinkId)?.name || 'Unbekanntes Getränk',
+        drinkName: this.drinks.find(d => d.id === c.drinkId)?.name || 'Unbekanntes GetrÃ¤nk',
         iconKey: this.drinks.find(d => d.id === c.drinkId)?.iconKey || 'beer'
       }));
   }
@@ -620,20 +619,20 @@ export class DatabaseService {
     await this.saveToStorage();
   }
 
-  // Mock-Daten zurücksetzen
+  // Mock-Daten zurÃ¼cksetzen
   async resetMockData(): Promise<void> {
     try {
       await this.clearAllData();
       await this.insertDemoData();
       await AsyncStorage.setItem(STORAGE_KEYS.seeded, '1');
-      console.log('Demo-Daten erfolgreich zurückgesetzt');
+      console.log('Demo-Daten erfolgreich zurÃ¼ckgesetzt');
     } catch (error) {
-      console.error('Fehler beim Zurücksetzen der Demo-Daten:', error);
+      console.error('Fehler beim ZurÃ¼cksetzen der Demo-Daten:', error);
       throw error;
     }
   }
 
-  // Alle Daten löschen
+  // Alle Daten lÃ¶schen
   async clearAllData(): Promise<void> {
     await this.ensureReady();
     this.users = [];
@@ -651,7 +650,7 @@ export class DatabaseService {
     await this.saveToStorage();
   }
 
-  // Daten exportieren (für Persistierung)
+  // Daten exportieren (fÃ¼r Persistierung)
   async exportData(): Promise<Record<string, unknown>> {
     try {
       await this.ensureReady();
@@ -677,7 +676,7 @@ export class DatabaseService {
     return [...this.consumptions];
   }
 
-  // Datenbank-Status prüfen
+  // Datenbank-Status prÃ¼fen
   async getDatabaseStatus(): Promise<{ isInitialized: boolean; tableCounts: Record<string, number> }> {
     try {
       await this.ensureReady();
@@ -749,13 +748,13 @@ export class DatabaseService {
     const finalQuantity = Math.max(1, Math.min(args.quantity, maxQuantity));
     const totalPrice = drink.price * finalQuantity;
 
-    // In-Memory anpassen (Quelle der Wahrheit für UI-Render)
+    // In-Memory anpassen (Quelle der Wahrheit fÃ¼r UI-Render)
     drink.stock -= finalQuantity;
     user.balance -= totalPrice; // negative = offene Rechnung -> wird negativer
     user.monthlyCount += finalQuantity;
 
     const consumption: Consumption = {
-      id: Date.now().toString() + Math.random().toString(36).slice(2, 11),
+      id: generateId(),
       userId: user.id,
       drinkId: drink.id,
       timestamp: Date.now(),

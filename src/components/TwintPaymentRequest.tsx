@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
-import { TwintService } from '../services/TwintService';
+import { TwintService, type TwintAdminConfig } from '../services/TwintService';
 
 interface TwintPaymentRequestProps {
   userId: string;
@@ -31,7 +31,7 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
   const [amount, setAmount] = useState(currentBalance < 0 ? Math.abs(currentBalance).toString() : '');
   const [message, setMessage] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
-  const [adminConfig, setAdminConfig] = useState<any>(null);
+  const [adminConfig, setAdminConfig] = useState<TwintAdminConfig | null>(null);
 
   const twintService = TwintService.getInstance();
 
@@ -177,24 +177,6 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
     } catch (error) {
       console.error('Fehler beim Teilen des QR-Codes:', error);
       Alert.alert('Fehler', 'QR-Code konnte nicht geteilt werden.');
-    }
-  };
-
-  const handlePaymentReturn = (paymentData: any) => {
-    if (paymentData && paymentData.userId === userId) {
-      Alert.alert(
-        'Zahlungsrückkehr',
-        `Zahlung für ${paymentData.amount} CHF wurde verarbeitet. Status: ${paymentData.status}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Hier könnte man den Zahlungsstatus aktualisieren
-              console.log('Zahlungsstatus aktualisiert:', paymentData);
-            }
-          }
-        ]
-      );
     }
   };
 

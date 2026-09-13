@@ -1,11 +1,28 @@
 import { create } from 'zustand';
-import type { Drink } from '../models/Drink';
-import type { Consumption } from '../models/Consumption';
-import type { UserProfile } from '../models/UserProfile';
+import {
+  NewDrinkInputSchema,
+  NewUserInputSchema,
+  type Consumption,
+  type Drink,
+  type UserProfile,
+} from '../domain/schemas';
 import { DatabaseService } from '../services/DatabaseService';
 import { NotificationService } from '../services/NotificationService';
+import { generateId } from '../utils/id';
 
-type DbStatus = { isInitialized: boolean; tableCounts: Record<string, number> };
+export type DbStatus = { isInitialized: boolean; tableCounts: Record<string, number> };
+
+/** Fehler mit benutzerfreundlicher Meldung (wird in der UI direkt angezeigt). */
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+function firstIssueMessage(error: { issues: { message: string }[] }, fallback: string): string {
+  return error.issues[0]?.message ?? fallback;
+}
 
 type AppStore = {
   // Master data
@@ -29,6 +46,8 @@ type AppStore = {
   refreshAdminStatus: () => Promise<void>;
 
   purchaseDrink: (args: { userId: string; drinkId: string; quantity: number }) => Promise<void>;
+  addUser: (input: { name: string; email: string }) => Promise<UserProfile>;
+  addDrink: (input: { name: string; price: string; stock: string; iconKey: string }) => Promise<Drink>;
   deleteUser: (userId: string) => Promise<void>;
   deleteDrink: (drinkId: string) => Promise<void>;
   deleteConsumption: (consumptionId: string) => Promise<void>;
@@ -101,6 +120,40 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (get().selectedUserId === userId) {
       await get().loadProfile(userId);
     }
+  },
+
+  addUser: async (input) => {
+    const parsed = NewUserInputSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new ValidationError(firstIssueMessage(parsed.error, 'Ungültige Eingaben.'));
+    }
+    const user: UserProfile = {
+      id: generateId(),
+      name: parsed.data.name,
+      email: parsed.data.email,
+      balance: 0,
+      monthlyCount: 0,
+    };
+    await db.saveUserProfile(user);
+    set({ users: [...get().users, user], selectedUserId: get().selectedUserId ?? user.id });
+    return user;
+  },
+
+  addDrink: async (input) => {
+    const parsed = NewDrinkInputSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new ValidationError(firstIssueMessage(parsed.error, 'Ungültige Eingaben.'));
+    }
+    const drink: Drink = {
+      id: generateId(),
+      name: parsed.data.name,
+      price: parsed.data.price,
+      stock: parsed.data.stock,
+      iconKey: parsed.data.iconKey,
+    };
+    await db.saveDrink(drink);
+    set({ drinks: [...get().drinks, drink] });
+    return drink;
   },
 
   deleteUser: async (userId) => {

@@ -11,29 +11,31 @@ import {
   TextInput,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useShallow } from 'zustand/react/shallow';
 import { DrinkIcon } from '../components/DrinkIcon';
 import { useAppStore } from '../state/appStore';
 import { getPlatformStyle, isAndroid } from '../utils/platformStyles';
+import type { Drink } from '../domain/schemas';
 
 const { width } = Dimensions.get('window');
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
-
 export const HomeScreen: React.FC = () => {
   const { users, drinks, selectedUserId, hydrate, selectUser, purchaseDrink, isHydrating } =
-    useAppStore((s) => ({
-      users: s.users,
-      drinks: s.drinks,
-      selectedUserId: s.selectedUserId,
-      hydrate: s.hydrate,
-      selectUser: s.selectUser,
-      purchaseDrink: s.purchaseDrink,
-      isHydrating: s.isHydrating,
-    }));
+    useAppStore(
+      useShallow((s) => ({
+        users: s.users,
+        drinks: s.drinks,
+        selectedUserId: s.selectedUserId,
+        hydrate: s.hydrate,
+        selectUser: s.selectUser,
+        purchaseDrink: s.purchaseDrink,
+        isHydrating: s.isHydrating,
+      }))
+    );
   const selectedUser = selectedUserId ? users.find((u) => u.id === selectedUserId) ?? null : null;
   const [isWide, setIsWide] = useState(width >= 900);
   const [quantityModalVisible, setQuantityModalVisible] = useState(false);
-  const [selectedDrink, setSelectedDrink] = useState<any>(null);
+  const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export const HomeScreen: React.FC = () => {
     await hydrate();
   };
 
-  const handleDrinkPurchase = async (drink: any) => {
+  const handleDrinkPurchase = async (drink: Drink) => {
     if (!selectedUser) {
       Alert.alert('Fehler', 'Bitte wählen Sie zuerst einen Benutzer aus.');
       return;
