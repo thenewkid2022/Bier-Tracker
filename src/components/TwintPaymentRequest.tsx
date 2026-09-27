@@ -1,5 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Modal, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
@@ -55,6 +67,7 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
   const paymentMessage = message.trim() || `Offene Rechnung für ${userName}`;
 
   const handleGenerate = () => {
+    Keyboard.dismiss();
     if (!twintService.validateAmount(numAmount)) {
       Alert.alert('Ungültiger Betrag', 'Bitte gib einen Betrag zwischen CHF 0.01 und 999999.99 ein.');
       return;
@@ -122,7 +135,8 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={() => void finish()}>
-      <View style={styles.backdrop}>
+      {/* Schiebt das Sheet über die Tastatur, damit Betrag/Nachricht und die Buttons sichtbar bleiben. */}
+      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
           <View style={styles.header}>
             <View style={styles.headerIcon}>
@@ -141,6 +155,7 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
           >
             {adminConfig?.merchantName || adminConfig?.iban ? (
@@ -245,7 +260,7 @@ export const TwintPaymentRequest: React.FC<TwintPaymentRequestProps> = ({
             )}
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };

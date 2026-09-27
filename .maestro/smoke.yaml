@@ -17,16 +17,12 @@ env:
 - assertVisible: 'Max Mustermann'
 - assertVisible: 'Bier'
 
-# Kauf-Flow: Getränk antippen -> Mengen-Sheet -> bestätigen
+# Kauf-Flow: ein Tipp auf das Getränk bucht genau 1 Stück (Bestätigung als Toast)
 - tapOn: 'Max Mustermann'
 - tapOn:
     text: 'Bier'
     index: 0
-- assertVisible: 'Menge'
-- tapOn:
-    text: 'Kaufen.*'
-- assertVisible: 'Gekauft'
-- tapOn: 'OK'
+- assertVisible: '1× Bier für Max Mustermann gebucht'
 
 # Profil-Tab zeigt den Kauf
 - tapOn: 'Profil'

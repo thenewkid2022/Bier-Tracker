@@ -29,7 +29,7 @@ Alle Daten bleiben **lokal auf dem Gerät** (SQLite). Es gibt kein Backend und k
 
 | Bereich          | Funktionen                                                                                      |
 | ---------------- | ----------------------------------------------------------------------------------------------- |
-| **Home**         | Benutzer auswählen, Getränk mit Menge (1–10) kaufen, Bestand und Saldo live sehen               |
+| **Home**         | Benutzer auswählen, ein Tipp auf ein Getränk bucht genau 1 Stück, Bestand und Saldo live sehen  |
 | **Profil**       | Konsum-Historie mit Getränk, Datum, Betrag; Gesamtausgaben; Einzelkauf stornieren; Saldo nullen |
 | **Admin**        | PIN-geschützt; Benutzer/Getränke anlegen & löschen; Datenbank-Status; Demo-Daten zurücksetzen   |
 | **TWINT**        | Zahlungsanfrage pro Benutzer mit vorgeschlagenem Betrag, QR-Code, TWINT-App öffnen, Deep-Link-Rückkehr verbucht Zahlung |

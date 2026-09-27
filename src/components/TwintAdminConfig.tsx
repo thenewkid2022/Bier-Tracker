@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TwintService } from '../services/TwintService';
@@ -116,7 +116,7 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({ isVisible, o
 
   return (
     <Modal visible={isVisible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
           <View style={styles.header}>
             <View style={styles.headerIcon}>
@@ -132,6 +132,7 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({ isVisible, o
           <ScrollView
             style={styles.scroll}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
@@ -202,7 +203,7 @@ export const TwintAdminConfig: React.FC<TwintAdminConfigProps> = ({ isVisible, o
             />
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
